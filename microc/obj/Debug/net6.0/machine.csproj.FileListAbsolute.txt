@@ -1,0 +1,15 @@
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\bin\Debug\net6.0\machine.exe
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\bin\Debug\net6.0\machine.deps.json
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\bin\Debug\net6.0\machine.runtimeconfig.json
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\bin\Debug\net6.0\machine.dll
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\bin\Debug\net6.0\machine.pdb
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\machine.csproj.AssemblyReference.cache
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\machine.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\machine.AssemblyInfoInputs.cache
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\machine.AssemblyInfo.cs
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\machine.csproj.CoreCompileInputs.cache
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\machine.dll
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\refint\machine.dll
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\machine.pdb
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\machine.genruntimeconfig.cache
+C:\Users\z'k\Desktop\编译原理\课件\lec04.Grammar\lab\plzoofs-master (1)\plzoofs-master\microc\obj\Debug\net6.0\ref\machine.dll
