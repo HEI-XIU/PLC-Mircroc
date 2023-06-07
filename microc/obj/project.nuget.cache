@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "S84JY6IuM4/XM3v94zOZ6kRu8fbm2+58m0/0q3p/f4YybmFUqwUuFEJ8ennvYxEZ+QnBbqTIqSElrzrmzpqxCQ==",
+  "dgSpecHash": "LHEtr8oLi4aOEZ7UhfbSTUXtb4yZikKvY0Wfsq4Vh6wQEdHv0oGh5Dr07hsVibFtW4NJj8LVqJ18E+gOqxDkwQ==",
   "success": true,
-  "projectFilePath": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\lec04.Grammar\\lab\\plzoofs-master (1)\\plzoofs-master\\microc\\machine.csproj",
-  "expectedPackageFiles": [],
+  "projectFilePath": "C:\\Git\\gitRepos\\microc\\interpc.fsproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\19085\\.nuget\\packages\\fsharp.core\\6.0.7\\fsharp.core.6.0.7.nupkg.sha512",
+    "C:\\Users\\19085\\.nuget\\packages\\fslexyacc\\10.2.0\\fslexyacc.10.2.0.nupkg.sha512",
+    "C:\\Users\\19085\\.nuget\\packages\\fslexyacc.runtime\\10.2.0\\fslexyacc.runtime.10.2.0.nupkg.sha512"
+  ],
   "logs": []
 }

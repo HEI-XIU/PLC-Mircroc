@@ -40,9 +40,11 @@ and stmt =
   | Block of stmtordec list          (* Block: grouping and scope   *)
   // 语句块内部，可以是变量声明 或语句的列表                                                              
 
+//语句或声明
 and stmtordec =                                                    
   | Dec of typ * string              (* Local variable declaration  *)
   | Stmt of stmt                     (* A statement                 *)
+  | DecAndAssign of typ * string * expr  (*变量初始化*)
 
 // 顶级声明 可以是函数声明或变量声明
 and topdec = 

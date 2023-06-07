@@ -289,11 +289,18 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
 
     | Return _ -> failwith "return not implemented" // 解释器没有实现 return
 
+//变量初始化
 and stmtordec stmtordec locEnv gloEnv store =
     match stmtordec with
-    | Stmt stmt -> (locEnv, exec stmt locEnv gloEnv store)
-    | Dec (typ, x) -> allocate (typ, x) locEnv store
-
+    | Stmt stmt -> (locEnv, exec stmt locEnv gloEnv store) //为语句分配空间
+    | Dec (typ, x) -> allocate (typ, x) locEnv store //局部变量调用allocate函数分配空间
+    | DecAndAssign (typ, x, expr) -> //局部变量初始化
+        let (locEnv1 ,store1) = allocate (typ, x) locEnv store //调用allocate函数，
+                                                               //为类型为typ的变量x在局部环境和store上分配空间，
+                                                               //这里返回的locEnv1就是该变量的局部环境
+        let (loc, store2) = access (AccVar x) locEnv1 gloEnv store1 //计算左值变量x的地址和更新过的store
+        let (res, store3) = eval expr locEnv gloEnv store2 //计算表达式expr，返回值和更新过的store
+        (locEnv1, setSto store3 loc res) //返回局部环境locEnv，把expr的值赋值给store3在loc位置上的变量，也就是赋值给变量x
 (* Evaluating micro-C expressions *)
 
 and eval e locEnv gloEnv store : int * store =
@@ -448,3 +455,5 @@ let run (Prog topdecs) vs =
     endstore
 
 (* Example programs are found in the files ex1.c, ex2.c, etc *)
+
+

@@ -14,8 +14,9 @@ let compose1 f (g, s) = ((fun x -> g(f(x))), s)
 let nl = CstI 10 //  \n 的 ASCII 码
 %}
 
+//%token是词元说明符
 %token <int> CSTINT CSTBOOL  // <int> 是词元的语义值类型
-%token <string> CSTSTRING NAME
+%token <string> CSTSTRING NAME  // CSTSTRING、NAME都是string类型
 
 %token CHAR ELSE IF INT NULL PRINT PRINTLN RETURN VOID WHILE
 %token PLUS MINUS TIMES DIV MOD
@@ -69,8 +70,14 @@ int *ipa[10];  // array of 10 pointers to int   (TypA (TypP TypI, Some 10), "ipa
 int (*iap)[10];  // pointer to array of 10 int    (TypP (TypA (TypI, Some 10))
 */
 
+// 变量声明
 Vardec:                                
     Type Vardesc                        { ((fst $2) $1, snd $2) }
+;
+
+// 变量初始化
+VardecAndAssign:
+    Type Vardesc ASSIGN Expr            { ((fst $2) $1, snd $2, $4)}   //格式是：   变量类型 变量描述 赋值符号 表达式
 ;
 
 /*
@@ -96,6 +103,8 @@ Vardesc:
   | Vardesc LBRACK RBRACK               { compose1 (fun t -> TypA(t, None)) $1    }
     // ia[10]   带方括号，带下标
   | Vardesc LBRACK CSTINT RBRACK        { compose1 (fun t -> TypA(t, Some $3)) $1 }
+  // 变量初始化
+  // | Vardec ASSIGN Expr SEMI StmtOrDecSeq { DecAndAssign (fst $1, snd $1, $3) :: $5 }  //格式是：   变量类型 变量描述 赋值符号 表达式
 ;
 
 Fundec:
