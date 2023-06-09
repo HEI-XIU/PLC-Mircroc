@@ -261,9 +261,14 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
         //定义 While循环辅助函数 loop
         let rec loop store1 =
             //求值 循环条件,注意变更环境 store
-            let (v, store2) = eval e locEnv gloEnv store1
+            // let (v, store2) = eval e locEnv gloEnv store1
+            let (resCmped, store2) = eval e locEnv gloEnv store1
+            // 求值  就是在更新变量，比如 while(i++) 就是i++ 的更新操作
+            // 虽然看不懂 但是盲猜是在干这个
             // 继续循环
-            if v <> 0 then
+            // if v <> 0 then
+            if resCmped <> 0 then
+            // 返回的值 去做loop
                 loop (exec body locEnv gloEnv store2)
             else
                 store2 //退出循环返回 环境store2
@@ -288,7 +293,51 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
         loop stmts (locEnv, store)
 
     | Return _ -> failwith "return not implemented" // 解释器没有实现 return
+    | For(assignedStmt,cmpStmt,updateStmt,body) -> 
+        let (resAssigned ,storeAssigned) = eval assignedStmt locEnv gloEnv store
+        //   获得初始值
+        let rec loop storeOrigin =
+                //求值 循环条件,注意变更环境 store
+                // 这里是做判断 是for 的第二个参数  i<n
+            let (resCmped, storeCmped) = eval cmpStmt locEnv gloEnv storeOrigin
+                // 继续循环
+                // 不是0 就不停止
+                // body 里面可能也会改变变量的 比如 
+                // for(i=0;i<n;i++){
+                //     i++
+                // }
+                // 所以要返回body里面改变过的变量 
+                // 去做一个更新操作 
+                // 为什么只有他写成v 后面let 才不会 爆红啊
+                // if resCmped<>0 then  这样就有问题
+                // 必须要对齐
+            if resCmped<>0 then 
+                let (updatedRes ,updatedStore) = eval updateStmt locEnv gloEnv (exec body locEnv gloEnv storeCmped)
+                //   这里做了第三个参数的i++ 
+                // 然后这个值可以放到loop里去做循环
+                //    用更新的变量去做body 里的事情
+                loop updatedStore
+                
+            else storeCmped  
+        loop storeAssigned
+    | DoWhile(body,e) -> 
 
+      let rec loop store1 =
+                //求值 循环条件,注意变更环境 store
+              let (v, store2) = eval e locEnv gloEnv store1
+                // 继续循环
+              if v<>0 then loop (exec body locEnv gloEnv store2)
+                      else store2  //退出循环返回 环境store2
+      loop (exec body locEnv gloEnv store)
+    | DoUntil(body,e) -> 
+
+      let rec loop store1 =
+                //求值 循环条件,注意变更环境 store
+              let (v, store2) = eval e locEnv gloEnv store1
+                // 继续循环
+              if v=0 then loop (exec body locEnv gloEnv store2)
+                      else store2  //退出循环返回 环境store2
+      loop (exec body locEnv gloEnv store)
 and stmtordec stmtordec locEnv gloEnv store =
     match stmtordec with
     | Stmt stmt -> (locEnv, exec stmt locEnv gloEnv store)
