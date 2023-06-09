@@ -33,6 +33,7 @@ type token =
   | NULL
   | PRINT
   | PRINTLN
+  | FOR
   | RETURN
   | VOID
   | WHILE
@@ -73,6 +74,7 @@ type tokenId =
     | TOKEN_NULL
     | TOKEN_PRINT
     | TOKEN_PRINTLN
+    | TOKEN_FOR
     | TOKEN_RETURN
     | TOKEN_VOID
     | TOKEN_WHILE

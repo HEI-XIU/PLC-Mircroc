@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\lec04.Grammar\\lab\\plzoofs-master (1)\\plzoofs-master\\microc\\interpc.fsproj": {}
+    "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\interpc.fsproj": {}
   },
   "projects": {
-    "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\lec04.Grammar\\lab\\plzoofs-master (1)\\plzoofs-master\\microc\\interpc.fsproj": {
+    "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\interpc.fsproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\lec04.Grammar\\lab\\plzoofs-master (1)\\plzoofs-master\\microc\\interpc.fsproj",
+        "projectUniqueName": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\interpc.fsproj",
         "projectName": "interpc",
-        "projectPath": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\lec04.Grammar\\lab\\plzoofs-master (1)\\plzoofs-master\\microc\\interpc.fsproj",
+        "projectPath": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\interpc.fsproj",
         "packagesPath": "C:\\Users\\z'k\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\lec04.Grammar\\lab\\plzoofs-master (1)\\plzoofs-master\\microc\\obj\\",
+        "outputPath": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\z'k\\AppData\\Roaming\\NuGet\\NuGet.Config"
