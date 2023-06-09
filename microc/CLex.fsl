@@ -30,7 +30,7 @@ let keyword s =
     | "for"     -> FOR
     | "void"    -> VOID 
     | "while"   -> WHILE  
-    | "unitl"   -> UNTIL
+    | "until"   -> UNTIL
     | "dounril" -> DOUNTIL
     | "dowhile" -> DOWHILE
     | "do"      -> DO       
