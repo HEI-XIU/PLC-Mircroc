@@ -33,10 +33,14 @@ type token =
   | NULL
   | PRINT
   | PRINTLN
-  | FOR
   | RETURN
   | VOID
   | WHILE
+  | FOR
+  | DOWHILE
+  | DO
+  | UNTIL
+  | DOUNTIL
   | CSTSTRING of (string)
   | NAME of (string)
   | CSTINT of (int)
@@ -74,10 +78,14 @@ type tokenId =
     | TOKEN_NULL
     | TOKEN_PRINT
     | TOKEN_PRINTLN
-    | TOKEN_FOR
     | TOKEN_RETURN
     | TOKEN_VOID
     | TOKEN_WHILE
+    | TOKEN_FOR
+    | TOKEN_DOWHILE
+    | TOKEN_DO
+    | TOKEN_UNTIL
+    | TOKEN_DOUNTIL
     | TOKEN_CSTSTRING
     | TOKEN_NAME
     | TOKEN_CSTINT

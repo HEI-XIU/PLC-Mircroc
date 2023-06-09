@@ -91,8 +91,8 @@
    | bool类型                 |          |      |      |      |
    | 数强制转型               |          |      |      |      |
    | 字符类型                 |          |      |      |      |
-   | dountil循环              |          |      |      |      |
-   | dowhile循环              |          |      |      |      |
+   | dountil循环              | 5        | 1    |      | zk   |
+   | dowhile循环              | 5        | 1    |      | zk   |
    | float类型                |          |      |      |      |
    | for循环                  | 5        | 1    |      | zk   |
    | forin（支持数组和纯数字) |          |      |      |      |
