@@ -13,7 +13,7 @@ module Absyn
 type typ =
   | TypI                             (* Type int                    *)
   | TypC                             (* Type char                   *)
-  | TypS of typ                      (* Type string                 *)
+  | TypS                             (* Type string                 *)
   | TypA of typ * int option         (* Array type                  *)
   | TypP of typ                      (* Pointer type                *)
   
@@ -34,6 +34,7 @@ and expr =                           // 表达式，右值
 
   | Inc of access                    (* ++                          *)
   | Decr of access                   (* --                          *)
+  | Print of string * expr
 
   | Andalso of expr * expr           (* Sequential and              *)
   | Orelse of expr * expr            (* Sequential or               *)

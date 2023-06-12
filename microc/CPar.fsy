@@ -173,6 +173,7 @@ ExprNotAccess:
   | Access INC                          { Inc($1)             }
   | DECR Access                         { Decr($2)            }
   | Access DECR                         { Decr($1)            }  
+  | PRINT LPAR CSTSTRING COMMA Expr RPAR{ Print($3, $5) }
 
   | NOT Expr                            { Prim1("!", $2)      }
   | PRINT Expr                          { Prim1("printi", $2) }
@@ -253,5 +254,5 @@ ConstChar:
 Type:
     INT                                 { TypI     }
   | CHAR                                { TypC     }
-  // | STRING                              { TypS     }
+  | STRING                              { TypS     }
 ;
