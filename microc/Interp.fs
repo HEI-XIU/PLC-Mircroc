@@ -295,33 +295,32 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
     | Return _ -> failwith "return not implemented" // 解释器没有实现 return
     | For(assignedStmt,cmpStmt,updateStmt,body) -> 
         let (resAssigned ,storeAssigned) = eval assignedStmt locEnv gloEnv store
-        //   获得初始值
+        // 对 assignedStmt 进行求值,通过let关键字将求值结果中的语句部分赋值给resAssigned变量，将新的存储状态赋值给storeAssigned变量，从而分别存储这两个值。
+        // 获得初始值
         let rec loop storeOrigin =
+                //storeOrigin是递归函数loop的输入参数
                 //求值 循环条件,注意变更环境 store
                 // 这里是做判断 是for 的第二个参数  i<n
             let (resCmped, storeCmped) = eval cmpStmt locEnv gloEnv storeOrigin
-                // 继续循环
-                // 不是0 就不停止
                 // body 里面可能也会改变变量的 比如 
                 // for(i=0;i<n;i++){
                 //     i++
                 // }
                 // 所以要返回body里面改变过的变量 
                 // 去做一个更新操作 
-                // 为什么只有他写成v 后面let 才不会 爆红啊
-                // if resCmped<>0 then  这样就有问题
-                // 必须要对齐
             if resCmped<>0 then 
+                //如果是0,就停止
                 let (updatedRes ,updatedStore) = eval updateStmt locEnv gloEnv (exec body locEnv gloEnv storeCmped)
-                //   这里做了第三个参数的i++ 
-                // 然后这个值可以放到loop里去做循环
-                //    用更新的变量去做body 里的事情
+                //  这里做了第三个参数的i++ 
+                //  然后这个值可以放到loop里去做循环
+                //  用更新的变量去做body 里的事情
                 loop updatedStore
-                
             else storeCmped  
+        //执行语句
         loop storeAssigned
-    | DoWhile(body,e) -> 
 
+    | DoWhile(body,e) -> 
+    //body为函数体，e为while()括号内判断表达式，用于判定是否结束
       let rec loop store1 =
                 //求值 循环条件,注意变更环境 store
               let (v, store2) = eval e locEnv gloEnv store1
@@ -329,8 +328,9 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
               if v<>0 then loop (exec body locEnv gloEnv store2)
                       else store2  //退出循环返回 环境store2
       loop (exec body locEnv gloEnv store)
-    | DoUntil(body,e) -> 
 
+    | DoUntil(body,e) -> 
+    //body为函数体，e为until()括号内判断表达式，用于判定是否结束
       let rec loop store1 =
                 //求值 循环条件,注意变更环境 store
               let (v, store2) = eval e locEnv gloEnv store1
@@ -338,11 +338,14 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
               if v=0 then loop (exec body locEnv gloEnv store2)
                       else store2  //退出循环返回 环境store2
       loop (exec body locEnv gloEnv store)
+
     | Switch(e,body) ->  
               let (res, store1) = eval e locEnv gloEnv store
+              //对e进行求值然后赋值给res
               let rec choose list =
                 match list with
                 | Case(e1,body1) :: tail -> 
+                //使用::符号对Case(e1, body1)和tail进行模式匹配，匹配成功时执行下面的代码块。
                     let (res2, store2) = eval e1 locEnv gloEnv store1
                     if res2=res then exec body1 locEnv gloEnv store2
                                 else choose tail
@@ -351,8 +354,10 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
                     exec body1 locEnv gloEnv store1
                     choose tail
               (choose body)
+              //对choose函数的调用，并以body参数作为输入
     | Case(e,body) -> exec body locEnv gloEnv store
     | Match(e,body) ->  
+    //与switch类似
               let (res, store1) = eval e locEnv gloEnv store
               let rec choose list =
                 match list with
@@ -380,11 +385,24 @@ and eval e locEnv gloEnv store : int * store =
     | Access acc ->
         let (loc, store1) = access acc locEnv gloEnv store
         (getSto store1 loc, store1)
+    //++与--操作
+    | Inc(acc)       -> let (loc, store1) = access acc locEnv gloEnv store
+                        let (res) = getSto store1 loc
+                        (res+1, setSto store1 loc (res+1)) 
+    
+    | Decr(acc)      -> let (loc, store1) = access acc locEnv gloEnv store
+                        let (res) = getSto store1 loc
+                        (res-1, setSto store1 loc (res-1)) 
+
     | Assign (acc, e) ->
         let (loc, store1) = access acc locEnv gloEnv store
         let (res, store2) = eval e locEnv gloEnv store1
         (res, setSto store2 loc res)
     | CstI i -> (i, store)
+    //string与char
+    | ConstNull i    -> (i ,store)
+    | ConstString  s -> (0 ,store)
+    | ConstChar c    -> ((int c), store)
     | Addr acc -> access acc locEnv gloEnv store
     | Prim1 (ope, e1) ->
         let (i1, store1) = eval e1 locEnv gloEnv store
@@ -407,6 +425,8 @@ and eval e locEnv gloEnv store : int * store =
 
         let res =
             match ope with
+            | "++" -> i1+1
+            | "--" -> i1-1
             | "*" -> i1 * i2
             | "+" -> i1 + i2
             | "-" -> i1 - i2

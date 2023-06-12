@@ -2,7 +2,7 @@
  (* File MicroC/CLex.lex
     Lexer specification for micro-C, a small imperative language
   *)
-
+//词法说明
 // module CLex = 
   
 open FSharp.Text.Lexing
@@ -38,7 +38,8 @@ let keyword s =
     | "match"   -> MATCH
     | "switch"  -> SWITCH
     | "case"    -> CASE 
-    | "default" -> DEFAULT         
+    | "default" -> DEFAULT   
+    | "string"  -> STRING       
     | _         -> NAME s   // 缺省情况，是标识符的名字，如 函数名，变量名等
                             // 当所有的关键字没有匹配成功时，则当成标识符
 // 字符串转义符处理函数
@@ -71,7 +72,8 @@ rule Token = parse          // 每个 规则rule 会生成为一个函数，函�
 
   | ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
                     { keyword (lexemeAsString lexbuf) } //标识符处理
-                                                       //先查是否是关键字，是则返回对应关键字的Token
+  | "++"            { INC }
+  | "--"            { DECR }                                                    //先查是否是关键字，是则返回对应关键字的Token
   | '+'             { PLUS }  // 返回Token PLUS 给调用词法分析器的程序，通常是Parser
                               // 此时lexbuf是 匹配 '+'完成后，后续的内容 
   | '?'             { QUE }
