@@ -9,8 +9,7 @@ open FSharp.Text.Lexing
 open CPar  // Token 的定义位于语法分析模块中
 
 // 辅助函数，从lexbuf 得到当前的 词元字符串，lexeme 
-let lexemeAsString lexbuf = 
-    LexBuffer<char>.LexemeString lexbuf
+let lexemeAsString lexbuf = LexBuffer<char>.LexemeString lexbuf
 
 (* Scan keywords as identifiers and use this function to distinguish them. *)
 (* If the set of keywords is large, use a hashtable instead.               *)
@@ -39,7 +38,8 @@ let keyword s =
     | "switch"  -> SWITCH
     | "case"    -> CASE 
     | "default" -> DEFAULT   
-    | "string"  -> STRING       
+    | "string"  -> STRING  
+    | "float"   -> FLOAT      
     | _         -> NAME s   // 缺省情况，是标识符的名字，如 函数名，变量名等
                             // 当所有的关键字没有匹配成功时，则当成标识符
 // 字符串转义符处理函数
@@ -69,6 +69,9 @@ rule Token = parse          // 每个 规则rule 会生成为一个函数，函�
                             //  System.Int32.Parse 将 字符串转换为 int 类型
                             // 在 CPar 中  词元CSTINT 的语义值的类型是int  %token <int> CSTINT
                             //  CSTINT 需要一个整数作为参数
+
+  | ['0'-'9']+'.'['0'-'9']+ 
+                    { CSTFLOAT (System.Single.Parse (lexemeAsString lexbuf)) } 
 
   | ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
                     { keyword (lexemeAsString lexbuf) } //标识符处理

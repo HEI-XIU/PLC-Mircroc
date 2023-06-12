@@ -54,6 +54,8 @@ type token =
   | QUE
   | ALL
   | STRING
+  | FLOAT
+  | CSTFLOAT of (float32)
   | CSTCHAR of (char)
   | CSTSTRING of (string)
   | NAME of (string)
@@ -113,6 +115,8 @@ type tokenId =
     | TOKEN_QUE
     | TOKEN_ALL
     | TOKEN_STRING
+    | TOKEN_FLOAT
+    | TOKEN_CSTFLOAT
     | TOKEN_CSTCHAR
     | TOKEN_CSTSTRING
     | TOKEN_NAME
@@ -146,6 +150,7 @@ type nonTerminalId =
     | NONTERM_Const
     | NONTERM_ConstString
     | NONTERM_ConstChar
+    | NONTERM_ConstFloat
     | NONTERM_Type
 /// This function maps tokens to integer indexes
 val tagOfToken: token -> int

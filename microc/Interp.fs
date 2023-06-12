@@ -243,6 +243,13 @@ let initEnvAndStore (topdecs: topdec list) : locEnv * funEnv * store =
     addv topdecs ([], 0) [] emptyStore
 
 (* ------------------------------------------------------------------- *)
+let float2BitInt (a: float32) : int =
+    let bytes: byte array = System.BitConverter.GetBytes(a)
+    System.BitConverter.ToInt32(bytes, 0)
+let Int2float (a: int) : float32 =
+    let bytes = System.BitConverter.GetBytes(a)
+    System.BitConverter.ToSingle(bytes, 0)
+
 
 (* Interpreting micro-C statements *)
 
@@ -399,16 +406,21 @@ and eval e locEnv gloEnv store : int * store =
         let (res, store2) = eval e locEnv gloEnv store1
         (res, setSto store2 loc res)
     | CstI i -> (i, store)
+    //float
+    | CstF f -> (float2BitInt f,store)
     //string与char
     | ConstNull i    -> (i ,store)
-    | ConstString  s -> (0 ,store)
+    // | ConstString  s -> (0 ,store)
+    | ConstString  s -> (s ,store)
     | ConstChar c    -> ((int c), store)
     | Addr acc -> access acc locEnv gloEnv store
     | Print(op,e1)   -> let (i1, store1) = eval e1 locEnv gloEnv store
                         let res = 
                           match op with
                           | "%c"   -> (printf "%c " (char i1); i1)
-                          | "%d"   -> (printf "%d " i1; i1)  
+                          | "%d"   -> (printf "%d " i1; i1)
+                          | "%f"   -> (printf "%f " (Int2float(i1)); i1)  
+                          | "%s"   -> (printf "%s " (string(i1)); i1) 
                         (res, store1) 
 
 
