@@ -33,7 +33,12 @@ let keyword s =
     | "until"   -> UNTIL
     | "dounril" -> DOUNTIL
     | "dowhile" -> DOWHILE
-    | "do"      -> DO       
+    | "do"      -> DO   
+    | "with"    -> WITH
+    | "match"   -> MATCH
+    | "switch"  -> SWITCH
+    | "case"    -> CASE 
+    | "default" -> DEFAULT         
     | _         -> NAME s   // 缺省情况，是标识符的名字，如 函数名，变量名等
                             // 当所有的关键字没有匹配成功时，则当成标识符
 // 字符串转义符处理函数
@@ -69,6 +74,7 @@ rule Token = parse          // 每个 规则rule 会生成为一个函数，函�
                                                        //先查是否是关键字，是则返回对应关键字的Token
   | '+'             { PLUS }  // 返回Token PLUS 给调用词法分析器的程序，通常是Parser
                               // 此时lexbuf是 匹配 '+'完成后，后续的内容 
+  | '?'             { QUE }
   | '-'             { MINUS } 
   | '*'             { TIMES } 
   | '/'             { DIV } 
@@ -80,6 +86,10 @@ rule Token = parse          // 每个 规则rule 会生成为一个函数，函�
   | '<'             { LT }
   | ">="            { GE }
   | "<="            { LE }
+  | "_"             { ALL }
+  | ":"             {COLON}
+  | "->"            {DEAL}
+  | "|"             {MATCHS}
   | "||"            { SEQOR }                     
   | "&&"            { SEQAND }                     
   | "&"             { AMP }                     

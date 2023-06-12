@@ -12,6 +12,9 @@ type token =
   | COMMA
   | ASSIGN
   | AMP
+  | COLON
+  | DEAL
+  | MATCHS
   | NOT
   | SEQOR
   | SEQAND
@@ -41,6 +44,13 @@ type token =
   | DO
   | UNTIL
   | DOUNTIL
+  | SWITCH
+  | CASE
+  | MATCH
+  | WITH
+  | DEFAULT
+  | QUE
+  | ALL
   | CSTSTRING of (string)
   | NAME of (string)
   | CSTINT of (int)
@@ -57,6 +67,9 @@ type tokenId =
     | TOKEN_COMMA
     | TOKEN_ASSIGN
     | TOKEN_AMP
+    | TOKEN_COLON
+    | TOKEN_DEAL
+    | TOKEN_MATCHS
     | TOKEN_NOT
     | TOKEN_SEQOR
     | TOKEN_SEQAND
@@ -86,6 +99,13 @@ type tokenId =
     | TOKEN_DO
     | TOKEN_UNTIL
     | TOKEN_DOUNTIL
+    | TOKEN_SWITCH
+    | TOKEN_CASE
+    | TOKEN_MATCH
+    | TOKEN_WITH
+    | TOKEN_DEFAULT
+    | TOKEN_QUE
+    | TOKEN_ALL
     | TOKEN_CSTSTRING
     | TOKEN_NAME
     | TOKEN_CSTINT
@@ -113,6 +133,8 @@ type nonTerminalId =
     | NONTERM_Access
     | NONTERM_Exprs
     | NONTERM_Exprs1
+    | NONTERM_StmtCase
+    | NONTERM_StmtPattern
     | NONTERM_Const
     | NONTERM_Type
 /// This function maps tokens to integer indexes

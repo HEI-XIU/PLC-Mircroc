@@ -4,7 +4,7 @@
 
    Must precede Interp.fs, Comp.fs and Contcomp.fs in Solution Explorer
  *)
-
+//抽象语法树
 module Absyn
 
 // 基本类型
@@ -15,7 +15,7 @@ type typ =
   | TypC                             (* Type char                   *)
   | TypA of typ * int option         (* Array type                  *)
   | TypP of typ                      (* Pointer type                *)
-                                                                   
+                                                                
 and expr =                           // 表达式，右值                                                
   | Access of access                 (* x    or  *p    or  a[e]     *) //访问左值（右值）
   | Assign of access * expr          (* x=e  or  *p=e  or  a[e]=e   *)
@@ -23,6 +23,7 @@ and expr =                           // 表达式，右值
   | CstI of int                      (* Constant                    *)
   | Prim1 of string * expr           (* Unary primitive operator    *)
   | Prim2 of string * expr * expr    (* Binary primitive operator   *)
+  | Prim3 of expr * expr * expr      (* 三目运算符                   *)
   | Andalso of expr * expr           (* Sequential and              *)
   | Orelse of expr * expr            (* Sequential or               *)
   | Call of string * expr list       (* Function call f(...)        *)
@@ -32,15 +33,21 @@ and access =                         //左值，存储的位置
   | AccDeref of expr                 (* Pointer dereferencing  *p   *)
   | AccIndex of access * expr        (* Array indexing         a[e] *)
                                                                    
-and stmt =                                                         
+and stmt =                           //语句                           
   | If of expr * stmt * stmt         (* Conditional                 *)
-  | While of expr * stmt             (* While loop                  *)
+  | While of expr * stmt             (* While循环                   *)
   | Expr of expr                     (* Expression statement   e;   *)
   | Return of expr option            (* Return from method          *)
   | Block of stmtordec list          (* Block: grouping and scope   *)
-  | For of expr * expr * expr * stmt
-  | DoWhile of stmt * expr           (* DoWhile loop                *)
-  | DoUntil of stmt * expr           (* DoUntil loop                *)
+  | For of expr * expr * expr * stmt (* for循环                     *)
+  | DoWhile of stmt * expr           (* DoWhile循环                 *)
+  | DoUntil of stmt * expr           (* DoUntil循环                 *)
+  | Switch of expr * stmt list       (* Switch语法                  *)
+  | Case of expr * stmt
+  | Default of stmt
+  | Match of expr * stmt list               (* 模式匹配语法                 *)
+  | Pattern of expr * stmt
+  | MatchAll of stmt                 (*                             *)
   // 语句块内部，可以是变量声明 或语句的列表                                                              
 
 and stmtordec =                                                    
