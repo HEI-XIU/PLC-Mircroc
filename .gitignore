@@ -1,7 +1,7 @@
 
-microc/obj
-microc/bin
-microc/CLex.fs
-microc/CPar.fsi
-microc/CPar.fs
+/microc/obj/
+/microc/bin/
+/microc/CLex.fs
+/microc/CPar.fsi
+/microc/CPar.fs
 
