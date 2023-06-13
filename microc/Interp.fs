@@ -243,12 +243,12 @@ let initEnvAndStore (topdecs: topdec list) : locEnv * funEnv * store =
     addv topdecs ([], 0) [] emptyStore
 
 (* ------------------------------------------------------------------- *)
-// let float2BitInt (a: float32) : int =
-//     let bytes: byte array = System.BitConverter.GetBytes(a)
-//     System.BitConverter.ToInt32(bytes, 0)
-// let Int2float (a: int) : float32 =
-//     let bytes = System.BitConverter.GetBytes(a)
-//     System.BitConverter.ToSingle(bytes, 0)
+let float2BitInt (a: float32) : int =
+    let bytes: byte array = System.BitConverter.GetBytes(a)
+    System.BitConverter.ToInt32(bytes, 0)
+let Int2float (a: int) : float32 =
+    let bytes = System.BitConverter.GetBytes(a)
+    System.BitConverter.ToSingle(bytes, 0)
 
 
 // let float2BitInt  (a:float32) :int= 
@@ -286,56 +286,56 @@ let initEnvAndStore (topdecs: topdec list) : locEnv * funEnv * store =
 //    fin
 
 
-let float2BitInt (a: float32) : int =
-    let sign = if a < 0.0f then 1 else 0
-    let mutable intPart = abs(int a)
-    let mutable fractionPart = abs(a) - float32 intPart
-    let mutable binaryStr = ""
+// let float2BitInt (a: float32) : int =
+//     let sign = if a < 0.0f then 1 else 0
+//     let mutable intPart = abs(int a)
+//     let mutable fractionPart = abs(a) - float32 intPart
+//     let mutable binaryStr = ""
     
-    while intPart > 0 do
-        binaryStr <- string (intPart % 2) + binaryStr
-        intPart <- intPart / 2
+//     while intPart > 0 do
+//         binaryStr <- string (intPart % 2) + binaryStr
+//         intPart <- intPart / 2
 
-    binaryStr <- binaryStr.PadLeft(8, '0') // 填充到8位
+//     binaryStr <- binaryStr.PadLeft(8, '0') // 填充到8位
 
-    for i in 0..22 do
-        fractionPart <- fractionPart * 2.0f
-        binaryStr <- binaryStr + string ((int fractionPart) % 2)
-        fractionPart <- fractionPart - float32(int fractionPart)
+//     for i in 0..22 do
+//         fractionPart <- fractionPart * 2.0f
+//         binaryStr <- binaryStr + string ((int fractionPart) % 2)
+//         fractionPart <- fractionPart - float32(int fractionPart)
 
-    binaryStr <- string(sign) + binaryStr
-    printfn "Binary string: %s" binaryStr
+//     binaryStr <- string(sign) + binaryStr
+//     printfn "Binary string: %s" binaryStr
 
-    System.Convert.ToInt32(binaryStr,2)
+//     System.Convert.ToInt32(binaryStr,2)
 
-let Int2float  (a:int) :float32= 
-    printf "%d" a
-    let mutable s = "";
-    let mutable temp = a;
-    while temp<>0 do
-      s <- (string (temp%2))  + s;
-      temp <- temp/2;
-    while s.Length<32 do 
-      s <- "0" + s
+// let Int2float  (a:int) :float32= 
+//     printf "%d" a
+//     let mutable s = "";
+//     let mutable temp = a;
+//     while temp<>0 do
+//       s <- (string (temp%2))  + s;
+//       temp <- temp/2;
+//     while s.Length<32 do 
+//       s <- "0" + s
 
-    printfn "%s" s
+//     printfn "%s" s
 
-    let mutable a = 1;
-    let mutable main = 0;
+//     let mutable a = 1;
+//     let mutable main = 0;
 
-    if s.Chars(0).Equals('1') then
-      a <- -1;
-    for i=0 to 8 do
-        main <- main*10 + (int (s.Chars(i+1)))
+//     if s.Chars(0).Equals('1') then
+//       a <- -1;
+//     for i=0 to 8 do
+//         main <- main*10 + (int (s.Chars(i+1)))
 
-    let mutable fina = float32 main
-    let mutable pow = 0.5F
+//     let mutable fina = float32 main
+//     let mutable pow = 0.5F
 
-    for i=0 to 22 do
-        fina <- fina+ (float32 (s.Chars(i+9)))*pow
-        pow <- pow * pow
+//     for i=0 to 22 do
+//         fina <- fina+ (float32 (s.Chars(i+9)))*pow
+//         pow <- pow * pow
 
-    fina*(float32 a)
+//     fina*(float32 a)
 
 
 (* Interpreting micro-C statements *)
