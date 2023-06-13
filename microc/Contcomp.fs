@@ -185,6 +185,20 @@ let makeGlobalEnvs(topdecs : topdec list) : VarEnv * FunEnv * instr list =
 
 let rec cStmt stmt (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : instr list = 
     match stmt with
+    //for循环
+    // | For(e1,e2,e3,stmt) ->
+    //   let label = newLabel()
+    //   let labStart = newLabel()
+    //   let labEnd = newLabel()
+    //   let lablist = labEnd :: label :: lablist
+    //   let cend = Label labEnd::C
+    //   let (jumptest, C1) =
+    //     makeJump (cExpr e2 varEnv funEnv lablist (IFNZRO labStart :: cend))
+    //   let C2 = Label label :: cExpr e3 varEnv funEnv lablist (addINCSP -1 C1)
+    //   let C3 = cStmt stmt varEnv funEnv lablist C2
+    //   cExpr e1 varEnv funEnv lablist (addINCSP -1 (addJump jumptest (Label labStart :: C3)))
+
+
     | If(e, stmt1, stmt2) -> 
       let (jumpend, C1) = makeJump C
       let (labelse, C2) = addLabel (cStmt stmt2 varEnv funEnv C1)

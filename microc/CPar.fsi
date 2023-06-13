@@ -36,6 +36,11 @@ type token =
   | RETURN
   | VOID
   | WHILE
+  | FOR
+  | DOWHILE
+  | DO
+  | UNTIL
+  | DOUNTIL
   | CSTSTRING of (string)
   | NAME of (string)
   | CSTINT of (int)
@@ -76,6 +81,11 @@ type tokenId =
     | TOKEN_RETURN
     | TOKEN_VOID
     | TOKEN_WHILE
+    | TOKEN_FOR
+    | TOKEN_DOWHILE
+    | TOKEN_DO
+    | TOKEN_UNTIL
+    | TOKEN_DOUNTIL
     | TOKEN_CSTSTRING
     | TOKEN_NAME
     | TOKEN_CSTINT
@@ -88,7 +98,6 @@ type nonTerminalId =
     | NONTERM_Topdecs
     | NONTERM_Topdec
     | NONTERM_Vardec
-    | NONTERM_VardecAndAssign
     | NONTERM_Vardesc
     | NONTERM_Fundec
     | NONTERM_Paramdecs

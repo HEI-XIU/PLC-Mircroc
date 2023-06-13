@@ -8,18 +8,18 @@
     ".NETCoreApp,Version=v6.0": {
       "interpc/1.0.0": {
         "dependencies": {
-          "FSharp.Core": "6.0.7",
+          "FSharp.Core": "7.0.200",
           "FsLexYacc": "10.2.0"
         },
         "runtime": {
           "interpc.dll": {}
         }
       },
-      "FSharp.Core/6.0.7": {
+      "FSharp.Core/7.0.200": {
         "runtime": {
           "lib/netstandard2.1/FSharp.Core.dll": {
-            "assemblyVersion": "6.0.0.0",
-            "fileVersion": "6.0.722.51308"
+            "assemblyVersion": "7.0.0.0",
+            "fileVersion": "7.2.23.6902"
           }
         },
         "resources": {
@@ -66,13 +66,13 @@
       },
       "FsLexYacc/10.2.0": {
         "dependencies": {
-          "FSharp.Core": "6.0.7",
+          "FSharp.Core": "7.0.200",
           "FsLexYacc.Runtime": "10.2.0"
         }
       },
       "FsLexYacc.Runtime/10.2.0": {
         "dependencies": {
-          "FSharp.Core": "6.0.7"
+          "FSharp.Core": "7.0.200"
         },
         "runtime": {
           "lib/netstandard2.0/FsLexYacc.Runtime.dll": {
@@ -89,12 +89,12 @@
       "serviceable": false,
       "sha512": ""
     },
-    "FSharp.Core/6.0.7": {
+    "FSharp.Core/7.0.200": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-e6wGrq5smV3Yk2fBE/Y0nBG5oFyF59k5Je0a0QDydUpg6liyaafGjD3xvutciKepCP2knspZ/sWViC/F1OyyQQ==",
-      "path": "fsharp.core/6.0.7",
-      "hashPath": "fsharp.core.6.0.7.nupkg.sha512"
+      "sha512": "sha512-NmgUnpNH6Zu9B0SPIhojyo38gnPdkdYFYQfbd6zosEH32kbGY/g/Klk7PfOWe1NAe/O1YOMmK9KhwQ2OWsWEbg==",
+      "path": "fsharp.core/7.0.200",
+      "hashPath": "fsharp.core.7.0.200.nupkg.sha512"
     },
     "FsLexYacc/10.2.0": {
       "type": "package",

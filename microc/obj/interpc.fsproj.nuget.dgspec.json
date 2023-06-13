@@ -1,27 +1,27 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Git\\gitRepos\\microc\\interpc.fsproj": {}
+    "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\interpc.fsproj": {}
   },
   "projects": {
-    "C:\\Git\\gitRepos\\microc\\interpc.fsproj": {
+    "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\interpc.fsproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Git\\gitRepos\\microc\\interpc.fsproj",
+        "projectUniqueName": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\interpc.fsproj",
         "projectName": "interpc",
-        "projectPath": "C:\\Git\\gitRepos\\microc\\interpc.fsproj",
-        "packagesPath": "C:\\Users\\19085\\.nuget\\packages\\",
-        "outputPath": "C:\\Git\\gitRepos\\microc\\obj\\",
+        "projectPath": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\interpc.fsproj",
+        "packagesPath": "C:\\Users\\z'k\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\19085\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\z'k\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net6.0"
         ],
         "sources": {
-          "C:\\Program Files\\dotnet\\sdk\\6.0.406\\FSharp\\library-packs": {},
-          "https://api.nuget.org/v3/index.json": {}
+          "C:\\Program Files\\dotnet\\sdk\\7.0.203\\FSharp\\library-packs": {},
+          "https://nuget.cdn.azure.cn/v3/index.json": {}
         },
         "frameworks": {
           "net6.0": {
@@ -37,7 +37,7 @@
             "FSharp.Core": {
               "include": "Runtime, Compile, Build, Native, Analyzers, BuildTransitive",
               "target": "Package",
-              "version": "[6.0.7, )",
+              "version": "[7.0.200, )",
               "generatePathProperty": true
             },
             "FsLexYacc": {
@@ -62,7 +62,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\6.0.406\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.203\\RuntimeIdentifierGraph.json"
         }
       }
     }

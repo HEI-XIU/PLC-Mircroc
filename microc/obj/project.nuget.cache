@@ -1,12 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "LHEtr8oLi4aOEZ7UhfbSTUXtb4yZikKvY0Wfsq4Vh6wQEdHv0oGh5Dr07hsVibFtW4NJj8LVqJ18E+gOqxDkwQ==",
+  "dgSpecHash": "zYl/OHyUFm00XZ4qoFcFu92d/0/QJ3C0BWuX++pETG5OAyli/RtS/qG4HI2NvUvk7M7ZAtLwMCq6FjgqnqW/3w==",
   "success": true,
-  "projectFilePath": "C:\\Git\\gitRepos\\microc\\interpc.fsproj",
+  "projectFilePath": "C:\\Users\\z'k\\Desktop\\编译原理\\课件\\大作业\\PLC_MicoC\\microc\\interpc.fsproj",
   "expectedPackageFiles": [
-    "C:\\Users\\19085\\.nuget\\packages\\fsharp.core\\6.0.7\\fsharp.core.6.0.7.nupkg.sha512",
-    "C:\\Users\\19085\\.nuget\\packages\\fslexyacc\\10.2.0\\fslexyacc.10.2.0.nupkg.sha512",
-    "C:\\Users\\19085\\.nuget\\packages\\fslexyacc.runtime\\10.2.0\\fslexyacc.runtime.10.2.0.nupkg.sha512"
+    "C:\\Users\\z'k\\.nuget\\packages\\fsharp.core\\7.0.200\\fsharp.core.7.0.200.nupkg.sha512",
+    "C:\\Users\\z'k\\.nuget\\packages\\fslexyacc\\10.2.0\\fslexyacc.10.2.0.nupkg.sha512",
+    "C:\\Users\\z'k\\.nuget\\packages\\fslexyacc.runtime\\10.2.0\\fslexyacc.runtime.10.2.0.nupkg.sha512"
   ],
   "logs": []
 }
