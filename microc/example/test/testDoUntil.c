@@ -2,11 +2,8 @@ void main(int n) {
     int i;
     i=0;
    do {
-        print i;
+        printf("%d",i);
         i=i+1;
    }  
-   until(i>n);
-
-
-
+   until(i<n);
 }

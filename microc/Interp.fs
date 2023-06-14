@@ -30,6 +30,63 @@ module Interp
 open Absyn
 open Debug
 
+// 带类型的数据
+type memoryData =
+    | INT of int
+    | BOOL of bool
+    | CHAR of char
+    | POINTER of int
+    | FLOAT of float
+    | STRING of string
+
+    member this.pointer =
+        match this with
+        | POINTER i -> i
+        | INT i -> i
+        | _ -> failwith ("not a pointer")
+
+    member this.int =
+        match this with
+        | INT i -> i
+        | POINTER i -> i
+        | FLOAT i -> int i
+        | BOOL i -> if i then 1 else 0
+        | _ -> failwith ("not int")
+
+    member this.char =
+        match this with
+        | CHAR i -> i
+        | INT i -> char i
+        | _ -> failwith ("not char")
+
+    member this.bool =
+        match this with
+        | BOOL i -> i
+        | _ -> failwith ("not bool")
+
+    member this.float =
+        match this with
+        | FLOAT i -> i
+        | INT i -> float i
+        | _ -> failwith ("not float")
+
+    member this.string =
+        match this with
+        | INT i -> string i
+        | BOOL i -> string i
+        | CHAR i -> string i
+        | POINTER i -> string i
+        | FLOAT i -> string i
+        | STRING i -> string i
+
+    member this.typeName =
+        match this with
+        | INT i -> "int"
+        | BOOL i -> "bool"
+        | CHAR i -> "char"
+        | POINTER i -> "pointer"
+        | FLOAT i -> "float"
+        | STRING i -> "string"
 (* Simple environment operations *)
 // 多态类型 env
 // 环境 env 是 元组 ("name",data) 的列表 ，名称是字符串 string 值 'data 可以是任意类型
@@ -40,10 +97,10 @@ type 'data env = (string * 'data) list
 
 //环境查找函数
 //在环境 env上查找名称为 x 的值
-let rec lookup env x =
-    match env with
-    | [] -> failwith (x + " not found")
-    | (y, v) :: yr -> if x = y then v else lookup yr x
+// let rec lookup env x =
+//     match env with
+//     | [] -> failwith (x + " not found")
+//     | (y, v) :: yr -> if x = y then v else lookup yr x
 
 (* A local variable environment also knows the next unused store location *)
 
@@ -91,6 +148,28 @@ type funEnv = (paramdecs * stmt) env
 
 type gloEnv = int env * funEnv
 
+//环境查找函数
+//查找名称为 x 的值的地址
+let rec lookup env x =
+    match env with
+    | [] -> failwith (x + " not found")
+    | (y, v) :: yr ->
+        if x = y then
+            POINTER(v)
+        else
+            lookup yr x
+
+//查找名称为 x 的函数
+let rec lookupFunc env x =
+    match env with
+    | [] -> failwith (x + " not found")
+    | (y, v) :: yr -> if x = y then v else lookupFunc yr x
+
+//查找结构体
+let rec structLookup env x index=
+    match env with
+    | []                            -> failwith(x + " not found")
+    | (name, arglist, size)::rhs    -> if x = name then (index, arglist, size) else structLookup rhs x (index+1)
 (* The store maps addresses (ints) to values (ints): *)
 
 //地址是store上的的索引值
@@ -102,24 +181,39 @@ type address = int
 // 位置 0 保存了值 3
 // 位置 1 保存了值 8
 
-type store = Map<address, int>
+type store = Map<address, memoryData>
 
 //空存储
-let emptyStore = Map.empty<address, int>
+// let emptyStore = Map.empty<address, int>
+//空存储
+let emptyStore = Map.empty<address, memoryData>
 
 //保存value到存储store
-let setSto (store: store) addr value = store.Add(addr, value)
+// let setSto (store: store) addr value = store.Add(addr, value)
+let setSto (store: store) addr (value: memoryData) =
+    match store.TryFind addr with
+    | Some (data) ->
+        if data.typeName = value.typeName then
+            store.Add(addr, value)
+        else
+            failwith (
+                "type error cant assign "
+                + value.typeName
+                + " to "
+                + data.typeName
+            )
+    | None -> store.Add(addr, value)
 
 //输入addr 返回存储的值value
 let getSto (store: store) addr = store.Item addr
 
 // store上从loc开始分配n个值的空间
 // 用于数组分配
-let rec initSto loc n store =
+let rec initSto loc n store initValue =
     if n = 0 then
         store
     else // 默认值 0
-        initSto (loc + 1) (n - 1) (setSto store loc 0)
+        initSto (loc + 1) (n - 1) (setSto store loc initValue) initValue
 
 (* Combined environment and store operations *)
 
@@ -201,17 +295,34 @@ let rec bindVars xs vs locEnv store : locEnv * store =
  *)
 //
 
-let rec allocate (typ, x) (env0, nextloc) sto0 : locEnv * store =
+let rec allocate (typ: typ, name: string, value: memoryData option) (currenEnv, nextloc: int) currStore : locEnv * store =
 
-    let (nextloc1, v, sto1) =
+    let defaultValue typ =
+        match typ with
+        | TypI -> INT(0)
+        | TypC -> CHAR(' ')
+        | TypB -> BOOL(false)
+        | TypF -> FLOAT(0.0)
+        | TypP i -> POINTER(-1)
+        | TypS -> STRING("")
+        // | TypeStruct s -> let (index,arg,size) = structLookup currentEnv s 0
+        //                   in initSto index size [] (defaultValue TypN)
+        | _ -> failwith ("cant init")
+
+    let (newNextloc: int, value: memoryData, newStore: store) =
         match typ with
         //数组 调用 initSto 分配 i 个空间
-        | TypA (t, Some i) -> (nextloc + i, nextloc, initSto nextloc i sto0)
+        | TypA (t, Some i) -> (nextloc + i, POINTER(nextloc), initSto nextloc i currStore (defaultValue t))
         // 常规变量默认值是 0
-        | _ -> (nextloc, 0, sto0)
+        | _ ->
+            (nextloc,
+             (match value with
+              | Some (x) -> x
+              | None -> defaultValue typ),
+             currStore)
 
-    msg $"\nalloc:\n {((typ, x), (env0, nextloc), sto0)}\n"
-    bindVar x v (env0, nextloc1) sto1
+    msg $"\nalloc:\n {((typ, name), (currenEnv, nextloc), currStore)}"
+    bindVar name value (currenEnv, newNextloc) newStore
 
 (* Build global environment of variables and functions.  For global
    variables, store locations are reserved; for global functions, just
@@ -230,7 +341,7 @@ let initEnvAndStore (topdecs: topdec list) : locEnv * funEnv * store =
 
         // 全局变量声明  调用allocate 在store上给变量分配空间
         | Vardec (typ, x) :: decr ->
-            let (locEnv1, sto1) = allocate (typ, x) locEnv store
+            let (locEnv1, sto1) = allocate (typ, x, None) locEnv store
             addv decr locEnv1 funEnv sto1
 
         //全局函数 将声明(f,(xs,body))添加到全局函数环境 funEnv
@@ -243,7 +354,6 @@ let initEnvAndStore (topdecs: topdec list) : locEnv * funEnv * store =
     addv topdecs ([], 0) [] emptyStore
 
 (* ------------------------------------------------------------------- *)
-
 (* Interpreting micro-C statements *)
 
 let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
@@ -251,7 +361,7 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
     | If (e, stmt1, stmt2) ->
         let (v, store1) = eval e locEnv gloEnv store
 
-        if v <> 0 then
+        if v.bool then
             exec stmt1 locEnv gloEnv store1 //True分支
         else
             exec stmt2 locEnv gloEnv store1 //False分支
@@ -267,7 +377,7 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
             // 虽然看不懂 但是盲猜是在干这个
             // 继续循环
             // if v <> 0 then
-            if resCmped <> 0 then
+            if resCmped.bool then
             // 返回的值 去做loop
                 loop (exec body locEnv gloEnv store2)
             else
@@ -295,168 +405,384 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
     | Return _ -> failwith "return not implemented" // 解释器没有实现 return
     | For(assignedStmt,cmpStmt,updateStmt,body) -> 
         let (resAssigned ,storeAssigned) = eval assignedStmt locEnv gloEnv store
-        //   获得初始值
+        // 对 assignedStmt 进行求值,通过let关键字将求值结果中的语句部分赋值给resAssigned变量，将新的存储状态赋值给storeAssigned变量，从而分别存储这两个值。
+        // 获得初始值
         let rec loop storeOrigin =
+                //storeOrigin是递归函数loop的输入参数
                 //求值 循环条件,注意变更环境 store
                 // 这里是做判断 是for 的第二个参数  i<n
             let (resCmped, storeCmped) = eval cmpStmt locEnv gloEnv storeOrigin
-                // 继续循环
-                // 不是0 就不停止
                 // body 里面可能也会改变变量的 比如 
                 // for(i=0;i<n;i++){
                 //     i++
                 // }
                 // 所以要返回body里面改变过的变量 
                 // 去做一个更新操作 
-                // 为什么只有他写成v 后面let 才不会 爆红啊
-                // if resCmped<>0 then  这样就有问题
-                // 必须要对齐
-            if resCmped<>0 then 
+            if resCmped.bool then 
+                //如果是0,就停止
                 let (updatedRes ,updatedStore) = eval updateStmt locEnv gloEnv (exec body locEnv gloEnv storeCmped)
-                //   这里做了第三个参数的i++ 
-                // 然后这个值可以放到loop里去做循环
-                //    用更新的变量去做body 里的事情
+                //  这里做了第三个参数的i++ 
+                //  然后这个值可以放到loop里去做循环
+                //  用更新的变量去做body 里的事情
                 loop updatedStore
-                
             else storeCmped  
+        //执行语句
         loop storeAssigned
+
     | DoWhile(body,e) -> 
-
+    //body为函数体，e为while()括号内判断表达式，用于判定是否结束
       let rec loop store1 =
                 //求值 循环条件,注意变更环境 store
               let (v, store2) = eval e locEnv gloEnv store1
                 // 继续循环
-              if v<>0 then loop (exec body locEnv gloEnv store2)
+              if v.bool then loop (exec body locEnv gloEnv store2)
                       else store2  //退出循环返回 环境store2
       loop (exec body locEnv gloEnv store)
+
     | DoUntil(body,e) -> 
-
+    //body为函数体，e为until()括号内判断表达式，用于判定是否结束
       let rec loop store1 =
                 //求值 循环条件,注意变更环境 store
               let (v, store2) = eval e locEnv gloEnv store1
                 // 继续循环
-              if v=0 then loop (exec body locEnv gloEnv store2)
+              if v.bool then loop (exec body locEnv gloEnv store2)
                       else store2  //退出循环返回 环境store2
       loop (exec body locEnv gloEnv store)
-//变量初始化
+
+    | Switch(e,body) ->  
+              let (res, store1) = eval e locEnv gloEnv store
+              //对e进行求值然后赋值给res
+              let rec choose list =
+                match list with
+                | Case(e1,body1) :: tail -> 
+                //使用::符号对Case(e1, body1)和tail进行模式匹配，匹配成功时执行下面的代码块。
+                    let (res2, store2) = eval e1 locEnv gloEnv store1
+                    if res2=res then exec body1 locEnv gloEnv store2
+                                else choose tail
+                | [] -> store1
+                | Default( body1 ) :: tail -> 
+                    exec body1 locEnv gloEnv store1
+                    choose tail
+                
+              (choose body)
+              //对choose函数的调用，并以body参数作为输入
+    | Case(e,body) -> exec body locEnv gloEnv store
+    | Match(e,body) ->  
+    //与switch类似
+              let (res, store1) = eval e locEnv gloEnv store
+              let rec choose list =
+                match list with
+                | Pattern(e1,body1) :: tail -> 
+                    let (res2, store2) = eval e1 locEnv gloEnv store1
+                    if res2 = res  then exec body1 locEnv gloEnv store2
+                                   else choose tail
+                | [] -> store1 
+                | MatchAll( body1) :: tail ->
+                    exec body1 locEnv gloEnv store1
+                    choose tail
+
+              (choose body)
+    | Pattern(e,body) -> exec body locEnv gloEnv store
+    | MatchAll (body )-> exec body locEnv gloEnv store
 and stmtordec stmtordec locEnv gloEnv store =
     match stmtordec with
-    | Stmt stmt -> (locEnv, exec stmt locEnv gloEnv store) //为语句分配空间
-    | Dec (typ, x) -> allocate (typ, x) locEnv store //局部变量调用allocate函数分配空间
-    | DecAndAssign (typ, x, expr) -> //局部变量初始化
-        let (locEnv1 ,store1) = allocate (typ, x) locEnv store //调用allocate函数，
-                                                               //为类型为typ的变量x在局部环境和store上分配空间，
-                                                               //这里返回的locEnv1就是该变量的局部环境
-        let (loc, store2) = access (AccVar x) locEnv1 gloEnv store1 //计算左值变量x的地址和更新过的store
-        let (res, store3) = eval expr locEnv gloEnv store2 //计算表达式expr，返回值和更新过的store
-        (locEnv1, setSto store3 loc res) //返回局部环境locEnv，把expr的值赋值给store3在loc位置上的变量，也就是赋值给变量x
-
+    | Stmt stmt -> (locEnv, exec stmt locEnv gloEnv store)
+    | Dec (typ, x) -> allocate (typ, x, None) locEnv store
+    | DecAndAssign (typ, name, expr) -> allocate (typ, name, Some(fst (eval expr locEnv gloEnv store))) locEnv store
 (* Evaluating micro-C expressions *)
 
-and eval e locEnv gloEnv store : int * store =
+and eval e locEnv gloEnv store : memoryData * store =
     match e with
+    | ToInt e -> match e with
+                    | CstC c -> (INT( int c-48),store)
+                    | CstF f -> (FLOAT(f), store)
+                    | _ -> failwith ("The input type is incorrect")
+    | ToChar e -> match e with
+                    | CstI i -> (CHAR(char i + char '0'), store)
+                    | _ -> failwith ("The input type is incorrect")
+    | ToFloat e -> match e with
+                    | CstI i -> (INT(i), store)
+                    | _ -> failwith ("The input type is incorrect")
+    | ToString e -> match e with
+                    | CstI i -> (STRING(string i), store)
+                    | CstF f -> (STRING(string f), store)
+                    | CstC c -> (STRING(string c), store)
+                    | _ -> failwith ("The input type is incorrect")
+
     | Access acc ->
         let (loc, store1) = access acc locEnv gloEnv store
-        (getSto store1 loc, store1)
+        (getSto store1 loc.pointer, store1)
     | Assign (acc, e) ->
         let (loc, store1) = access acc locEnv gloEnv store
         let (res, store2) = eval e locEnv gloEnv store1
-        (res, setSto store2 loc res)
-    | CstI i -> (i, store)
+        (res, setSto store2 loc.pointer res)
+                        
+    | CstI i -> (INT(i), store)
+    | CstB i -> (BOOL(i), store)
+    | CstF i -> (FLOAT(i), store)
+    | CstS i -> (STRING(i), store)
+    | CstC i -> (CHAR(i),store)
     | Addr acc -> access acc locEnv gloEnv store
-    | Prim1 (ope, e1) -> //一元基本算子
-        let (i1, store1) = eval e1 locEnv gloEnv store //计算表达式e1的值，并得到环境 
-
-        let res =
-            match ope with //模式匹配
-            | "!" -> if i1 = 0 then 1 else 0 //取反
-            | "printi" ->
-                (printf "%d " i1
-                 i1)
-            | "printc" ->
-                (printf "%c" (char i1)
-                 i1)
-            | "~" -> ~~~i1
-            | _ -> failwith ("unknown primitive " + ope)
-
-        (res, store1) //返回模式匹配计算到的值和存储
-    | Prim2 (ope, e1, e2) -> //二元基本算子
-        let (i1, store1) = eval e1 locEnv gloEnv store //计算表达式e1，第一个参数的store
-        let (i2, store2) = eval e2 locEnv gloEnv store1 //计算表达式e2，第二个参数的store
+    | Prim1 (ope, e1) ->
+        let (i1, store1) = eval e1 locEnv gloEnv store
 
         let res =
             match ope with
-            | "*" -> i1 * i2
-            | "+" -> i1 + i2
-            | "-" -> i1 - i2
-            | "/" -> i1 / i2
-            | "%" -> i1 % i2
-            | "==" -> if i1 = i2 then 1 else 0
-            | "!=" -> if i1 <> i2 then 1 else 0
-            | "<" -> if i1 < i2 then 1 else 0
-            | "<=" -> if i1 <= i2 then 1 else 0
-            | ">=" -> if i1 >= i2 then 1 else 0
-            | ">" -> if i1 > i2 then 1 else 0
-            | "<<" -> i1 <<< i2
-            | ">>" -> i1 >>> i2
-            | "&" -> i1 &&& i2
-            | "|" -> i1 ||| i2
-            | "^" -> i1 ^^^ i2
+            | "!" -> BOOL(not i1.bool)
+            | "printi" ->
+                (printf "%d " i1.int
+                 i1)
+            | "printc" ->
+                (printf "%c" i1.char
+                 i1)
+            | _ -> failwith ("unknown primitive " + ope)
+
+        (res, store1)
+    | Print (ope , e1) ->
+        let (i1,store1) = eval e1 locEnv gloEnv store
+
+        let res = 
+            match ope with
+            | "%c"   -> (printf "%c " i1.char; i1)
+            | "%d"   -> (printf "%d " i1.int;i1)  
+            | "%s"   -> (printf "%s " i1.string;i1) 
+            | "%f"   -> (printf "%f " i1.float;i1)
+            | "%x"   -> (printf "%x"  i1.int;i1)
+            | "%o"   -> (printf "%o"  i1.int;i1) 
+            | _      -> (printf "%s " i1.string;i1) 
+
+        (res, store1)
+
+    | Prim2 (ope, e1, e2) ->
+
+        let (i1, store1) = eval e1 locEnv gloEnv store
+        let (i2, store2) = eval e2 locEnv gloEnv store1
+
+        let res =
+            match ope with
+            | "*" ->
+                match (i1) with
+                | INT i -> 
+                    if(i2.typeName = i1.typeName) then INT(i1.int * i2.int)
+                    else FLOAT(i1.float * i2.float)
+                | FLOAT i -> 
+                    if(i2.typeName = i1.typeName) then FLOAT(i1.float * i2.float)
+                    else FLOAT(i1.float * i2.float)
+                | _ -> failwith ("cant TIMES")
+            | "+" ->
+                match (i1, i2) with
+                | (INT i1, INT i2) -> INT(i1 + i2)
+                | (FLOAT i1, _) -> FLOAT(i1 + i2.float)
+                | (_, FLOAT i2) -> FLOAT(i1.float + i2)
+                | (STRING i1, STRING i2) -> STRING(i1 + i2)
+                | _ -> failwith ("type error: cant calu")
+                //有待修改
+            | "-" ->
+                match (i1, i2) with
+                | (INT i1, INT i2) -> INT(i1 - i2)
+                | (FLOAT i1, _) -> FLOAT(i1 - i2.float)
+                | (_, FLOAT i2) -> FLOAT(i1.float - i2)
+                | _ -> failwith ("type error: cant calu")
+            | "/" ->
+                match i1 with
+                | INT i -> 
+                    if(i2.typeName = i1.typeName) then INT(i1.int / i2.int)
+                    else FLOAT(i1.float / i2.float)
+                | FLOAT i -> 
+                    if(i2.typeName = i1.typeName) then FLOAT(i1.float / i2.float)
+                    else FLOAT(i1.float / i2.float)
+                | _ -> failwith ("cant DIV")
+            | "%" -> 
+                match i2 with
+                | INT i -> 
+                    if(i2.typeName = i1.typeName) then INT(i1.int % i2.int)
+                    else failwith ("cant MOD")
+                | _ -> failwith ("cant MOD")
+            | "==" ->
+                if i1 = i2 then
+                    BOOL(true)
+                else
+                    BOOL(false)
+            | "!=" ->
+                if i1 <> i2 then
+                    BOOL(true)
+                else
+                    BOOL(false)
+            | "<" ->
+                if i1 < i2 then
+                    BOOL(true)
+                else
+                    BOOL(false)
+            | "<=" ->
+                if i1 <= i2 then
+                    BOOL(true)
+                else
+                    BOOL(false)
+            | ">=" ->
+                if i1 >= i2 then
+                    BOOL(true)
+                else
+                    BOOL(false)
+            | ">" ->
+                if i1 > i2 then
+                    BOOL(true)
+                else
+                    BOOL(false)
             | _ -> failwith ("unknown primitive " + ope)
 
         (res, store2)
-    | Prim3 (ope, acc, e) -> //复合赋值运算符
-        let (loc, store1) = access acc locEnv gloEnv store //取要求的acc的地址和环境store1
-        let v1=getSto store1 loc //得到acc地址上的值
-        let (v2, store2) = eval e locEnv gloEnv store1 //计算表达式e的值，并得到新环境store2
-        
-        let res= //匹配五种复合赋值运算符，得到计算结果
-            match ope with
-            | "+=" -> v1 + v2
-            | "-=" -> v1 - v2
-            | "*=" -> v1 * v2
-            | "/=" -> v1 / v2
-            | "%=" -> v1 % v2
-            | "<<" -> v1 <<< v2
-            | ">>" -> v1 >>> v2
-            | _ -> failwith ("unknown primitive " + ope)
-        
-        (res, setSto store2 loc res) //返回的store是把计算结果存到左值acc地址上后的新store
-    | TernaryOperator (e1, e2, e3) -> //三目运算符
-        let (v, store1) = eval e1 locEnv gloEnv store //计算表达式e1的值
-        if v <> 0 then //表达式e1不为0
-            let (v2, store2) = eval e2 locEnv gloEnv store1//计算e2
-            (v2,store2) //返回结果和store2
-        else //表达式e1为0
-            let (v2, store2) = eval e3 locEnv gloEnv store1//计算e3
-            (v2,store2) //返回结果和store2
+
+    | Prim3 (cond, e1, e2) ->
+        let (v1, store1) = eval cond locEnv gloEnv store
+
+        if v1.bool then
+            let (v2, store2) = eval e1 locEnv gloEnv store1
+            (v2, store2)
+        else
+            let (v3, store3) = eval e2 locEnv gloEnv store1
+            (v3, store3)
+
     | Andalso (e1, e2) ->
         let (i1, store1) as res = eval e1 locEnv gloEnv store
 
-        if i1 <> 0 then
+        if i1.bool then
             eval e2 locEnv gloEnv store1
         else
             res
+    | PlusAssign (acc, e) ->
+        let (loc, store1) = access acc locEnv gloEnv store
+        let (res, store2) = eval e locEnv gloEnv store1
+        let tmp = getSto store1 loc.pointer
+
+        let var =
+            match tmp with
+            | INT i -> 
+                if(tmp.typeName = res.typeName) then INT(tmp.int + res.int)
+                else FLOAT(tmp.float + res.float)
+            | FLOAT i -> FLOAT(tmp.float + res.float)
+            | _ -> failwith ("please input int or float")
+
+        (var, setSto store2 loc.pointer var)
+
+    | MinusAssign (acc, e) ->
+        let (loc, store1) = access acc locEnv gloEnv store
+        let (res, store2) = eval e locEnv gloEnv store1
+        let tmp = getSto store1 loc.pointer
+
+        let var =
+            match tmp with
+            | INT i -> 
+                if(tmp.typeName = res.typeName) then INT(tmp.int - res.int)
+                else FLOAT(tmp.float - res.float)
+            | FLOAT i -> FLOAT(tmp.float - res.float)
+            | _ -> failwith ("please input int or float")
+
+        (var, setSto store2 loc.pointer var)
+
+    | TimesAssign (acc, e) ->
+        let (loc, store1) = access acc locEnv gloEnv store
+        let (res, store2) = eval e locEnv gloEnv store1
+        let tmp = getSto store1 loc.pointer
+
+        let var =
+            match tmp with
+            | INT i -> 
+                if(tmp.typeName = res.typeName) then INT(tmp.int * res.int)
+                else FLOAT(tmp.float * res.float)
+            | FLOAT i -> FLOAT(tmp.float * res.float)
+            | _ -> failwith ("please input int or float")
+
+        (var, setSto store2 loc.pointer var)
+
+    | DivAssign (acc, e) ->
+        let (loc, store1) = access acc locEnv gloEnv store
+        let (res, store2) = eval e locEnv gloEnv store1
+        let tmp = getSto store1 loc.pointer
+
+        let var =
+            match tmp with
+            | INT i -> 
+                if(tmp.typeName = res.typeName) then INT(tmp.int / res.int)
+                else FLOAT(tmp.float / res.float)
+            | FLOAT i -> FLOAT(tmp.float / res.float)
+            | _ -> failwith ("please input int or float")
+
+        (var, setSto store2 loc.pointer var)
+
+    | ModAssign (acc, e) ->
+        let (loc, store1) = access acc locEnv gloEnv store
+        let (res, store2) = eval e locEnv gloEnv store1
+        let tmp = getSto store1 loc.pointer
+
+        let var =
+            match tmp with
+            | INT i -> 
+                if(tmp.typeName = res.typeName) then INT(tmp.int % res.int)
+                else failwith ("please input int or float")
+            | _ -> failwith ("please input int or float")
+
+        (var, setSto store2 loc.pointer var)
+
+    | PrePlus (ope, acc) ->
+        let (loc, store1) = access acc locEnv gloEnv store
+        let tmp = getSto store1 loc.pointer
+        let var =
+            match tmp with
+            | INT i -> INT(tmp.int + 1)
+            | FLOAT i -> FLOAT(tmp.float+1.0)
+            | _ -> failwith ("please input int or float")
+        (var, setSto store loc.pointer var)
+
+    | RearPlus (acc, ope) ->
+        let (loc, store1) = access acc locEnv gloEnv store
+        let tmp = getSto store1 loc.pointer
+        let var =
+            match tmp with
+            | INT i -> INT(tmp.int + 1)
+            | FLOAT i -> FLOAT(tmp.float+1.0)
+            | _ -> failwith ("please input int or float")
+        (var, setSto store loc.pointer var)
+
+    | PreMinus (ope, acc) ->
+        let (loc, store1) = access acc locEnv gloEnv store
+        let tmp = getSto store1 loc.pointer
+        let var =
+            match tmp with
+            | INT i -> INT(tmp.int - 1)
+            | FLOAT i -> FLOAT(tmp.float-1.0)
+            | _ -> failwith ("please input int or float")
+        (var, setSto store loc.pointer var)
+
+    | RearMinus (acc, ope) ->
+        let (loc, store1) = access acc locEnv gloEnv store
+        let tmp = getSto store1 loc.pointer
+        let var =
+            match tmp with
+            | INT i -> INT(tmp.int - 1)
+            | FLOAT i -> FLOAT(tmp.float-1.0)
+            | _ -> failwith ("please input int or float")
+        (var, setSto store loc.pointer var)
+        
     | Orelse (e1, e2) ->
         let (i1, store1) as res = eval e1 locEnv gloEnv store
 
-        if i1 <> 0 then
+        if i1.bool then
             res
         else
             eval e2 locEnv gloEnv store1
     | Call (f, es) -> callfun f es locEnv gloEnv store
 
-and access acc locEnv gloEnv store : int * store =
+and access acc locEnv gloEnv store : memoryData * store =
     match acc with
     | AccVar x -> (lookup (fst locEnv) x, store)
     | AccDeref e -> eval e locEnv gloEnv store
     | AccIndex (acc, idx) ->
         let (a, store1) = access acc locEnv gloEnv store
-        let aval = getSto store1 a
+        let aval = getSto store1 a.pointer
         let (i, store2) = eval idx locEnv gloEnv store1
-        (aval + i, store2)
+        (POINTER(aval.pointer + i.int), store2)
 
-and evals es locEnv gloEnv store : int list * store =
+and evals es locEnv gloEnv store : memoryData list * store =
     match es with
     | [] -> ([], store)
     | e1 :: er ->
@@ -464,26 +790,25 @@ and evals es locEnv gloEnv store : int list * store =
         let (vr, storer) = evals er locEnv gloEnv store1
         (v1 :: vr, storer)
 
-and callfun f es locEnv gloEnv store : int * store =
+and callfun f es locEnv gloEnv store : memoryData * store =
 
     msg
     <| sprintf "callfun: %A\n" (f, locEnv, gloEnv, store)
 
     let (_, nextloc) = locEnv
     let (varEnv, funEnv) = gloEnv
-    let (paramdecs, fBody) = lookup funEnv f
+    let (paramdecs, fBody) = lookupFunc funEnv f
     let (vs, store1) = evals es locEnv gloEnv store
 
     let (fBodyEnv, store2) =
         bindVars (List.map snd paramdecs) vs (varEnv, nextloc) store1
 
     let store3 = exec fBody fBodyEnv gloEnv store2
-    (-111, store3)
+    (INT(-111), store3)
 
 (* Interpret a complete micro-C program by initializing the store
    and global environments, then invoking its `main' function.
  *)
-
 // run 返回的结果是 代表内存更改的 store 类型
 // vs 参数列表 [8,2,...]
 // 可以为空 []
@@ -493,25 +818,20 @@ let run (Prog topdecs) vs =
 
     // mainParams 是 main 的参数列表
     //
-    let (mainParams, mainBody) = lookup funEnv "main"
+    let (mainParams, mainBody) = lookupFunc funEnv "main"
 
     let (mainBodyEnv, store1) =
         bindVars (List.map snd mainParams) vs (varEnv, nextloc) store0
-
-
     msg
     <|
-
     //以ex9.c为例子
     // main的 AST
     sprintf "\nmainBody:\n %A\n" mainBody
     +
-
     //局部环境
     // 如
     // i 存储在store位置0,store中下个空闲位置是1
     //([("i", 0)], 1)
-
     sprintf "\nmainBodyEnv:\n %A\n" mainBodyEnv
     +
 
