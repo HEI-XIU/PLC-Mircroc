@@ -38,8 +38,7 @@ type memoryData =
     | POINTER of int
     | FLOAT of float
     | STRING of string
-    // | ADD of float
-    // | DEC of float
+    | TypeStruct of string
 
     member this.pointer =
         match this with
@@ -80,15 +79,9 @@ type memoryData =
         | POINTER i -> string i
         | FLOAT i -> string i
         | STRING i -> string i
-    // member this.add = 
-    //     match this with 
-    //     | FLOAT i ->i = i+1.0
-    //     | INT i -> i= int (i+1)
-
-    // member this.dec = 
-    //     match this with 
-    //     | FLOAT i ->i = i-1.0
-    //     | INT i -> i= int (i-1)
+    member this.typestruct =
+        match this with
+        | INT i -> string i
 
     member this.typeName =
         match this with
@@ -98,8 +91,7 @@ type memoryData =
         | POINTER i -> "pointer"
         | FLOAT i -> "float"
         | STRING i -> "string"
-        // | ADD i -> "add"
-        // | DEC i -> "dec"
+        | TypeStruct i -> "typestruct"
 (* Simple environment operations *)
 // 多态类型 env
 // 环境 env 是 元组 ("name",data) 的列表 ，名称是字符串 string 值 'data 可以是任意类型
@@ -178,7 +170,11 @@ let rec lookupFunc env x =
     | [] -> failwith (x + " not found")
     | (y, v) :: yr -> if x = y then v else lookupFunc yr x
 
-
+//查找结构体
+let rec structLookup env x index=
+    match env with
+    | []                            -> failwith(x + " not found")
+    | (name, arglist, size)::rhs    -> if x = name then (index, arglist, size) else structLookup rhs x (index+1)
 (* The store maps addresses (ints) to values (ints): *)
 
 //地址是store上的的索引值
@@ -314,6 +310,8 @@ let rec allocate (typ: typ, name: string, value: memoryData option) (currenEnv, 
         | TypF -> FLOAT(0.0)
         | TypP i -> POINTER(-1)
         | TypS -> STRING("")
+        // | TypeStruct s -> let (index,arg,size) = structLookup currentEnv s 0
+        //                   in initSto index size [] (defaultValue TypN)
         | _ -> failwith ("cant init")
 
     let (newNextloc: int, value: memoryData, newStore: store) =

@@ -229,6 +229,14 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
         cAccess acc varEnv funEnv
         @ cExpr e varEnv funEnv @ [ STI ]
     | CstI i -> [ CSTI i ]
+    //测试解释器
+    | Print(s,e)     ->  
+      cExpr e varEnv funEnv
+      @ (match s with
+         | "%d"      -> [PRINTI]
+         | "%c"      -> [PRINTC]
+        // | "%f"      -> [PRINTF]
+         | _        -> raise (Failure "unknown primitive 1"))
     | Addr acc -> cAccess acc varEnv funEnv
     | Prim1 (ope, e1) ->
         cExpr e1 varEnv funEnv

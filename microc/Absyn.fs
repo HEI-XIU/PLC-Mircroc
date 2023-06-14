@@ -18,6 +18,7 @@ type typ =
   | TypF                             (* Type float                  *)
   | TypA of typ * int option         (* Array type                  *)
   | TypP of typ                      (* Pointer type                *)
+  | TypeStruct of string             (* Struct type                *)
   
                                                                 
 and expr =                           // 表达式，右值   
@@ -41,8 +42,6 @@ and expr =                           // 表达式，右值
   | Prim2 of string * expr * expr    (* Binary primitive operator   *)
   | Prim3 of expr * expr * expr      (* 三目运算符                   *)
 
-  | Inc of access                    (* ++                          *)
-  | Decr of access                   (* --                          *)
   | PlusAssign of access * expr       // x += a
   | MinusAssign of access * expr      // x -= a
   | TimesAssign of access * expr      // x *=  a
@@ -62,6 +61,7 @@ and access =                         //左值，存储的位置
   | AccVar of string                 (* Variable access        x    *) 
   | AccDeref of expr                 (* Pointer dereferencing  *p   *)
   | AccIndex of access * expr        (* Array indexing         a[e] *)
+  | AccStruct of access * access     (* Struct结构体                 *)
                                                                    
 and stmt =                           //语句                           
   | If of expr * stmt * stmt         (* Conditional                 *)
