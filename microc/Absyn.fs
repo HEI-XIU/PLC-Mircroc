@@ -21,8 +21,10 @@ and expr =                           // 表达式，右值
   | Assign of access * expr          (* x=e  or  *p=e  or  a[e]=e   *)
   | Addr of access                   (* &x   or  &*p   or  &a[e]    *)
   | CstI of int                      (* Constant                    *)
-  | Prim1 of string * expr           (* Unary primitive operator    *)
-  | Prim2 of string * expr * expr    (* Binary primitive operator   *)
+  | Prim1 of string * expr           (* Unary primitive operator    *)//一元基本算子
+  | Prim2 of string * expr * expr    (* Binary primitive operator   *)//二元基本算子
+  | Prim3 of string * access * expr                                   //复合赋值运算符
+  | TernaryOperator of expr * expr * expr        //三目运算符 ? :
   | Andalso of expr * expr           (* Sequential and              *)
   | Orelse of expr * expr            (* Sequential or               *)
   | Call of string * expr list       (* Function call f(...)        *)

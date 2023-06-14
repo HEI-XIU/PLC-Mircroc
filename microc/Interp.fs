@@ -364,24 +364,25 @@ and eval e locEnv gloEnv store : int * store =
         (res, setSto store2 loc res)
     | CstI i -> (i, store)
     | Addr acc -> access acc locEnv gloEnv store
-    | Prim1 (ope, e1) ->
-        let (i1, store1) = eval e1 locEnv gloEnv store
+    | Prim1 (ope, e1) -> //一元基本算子
+        let (i1, store1) = eval e1 locEnv gloEnv store //计算表达式e1的值，并得到环境 
 
         let res =
-            match ope with
-            | "!" -> if i1 = 0 then 1 else 0
+            match ope with //模式匹配
+            | "!" -> if i1 = 0 then 1 else 0 //取反
             | "printi" ->
                 (printf "%d " i1
                  i1)
             | "printc" ->
                 (printf "%c" (char i1)
                  i1)
+            | "~" -> ~~~i1
             | _ -> failwith ("unknown primitive " + ope)
 
-        (res, store1)
-    | Prim2 (ope, e1, e2) ->
-        let (i1, store1) = eval e1 locEnv gloEnv store
-        let (i2, store2) = eval e2 locEnv gloEnv store1
+        (res, store1) //返回模式匹配计算到的值和存储
+    | Prim2 (ope, e1, e2) -> //二元基本算子
+        let (i1, store1) = eval e1 locEnv gloEnv store //计算表达式e1，第一个参数的store
+        let (i2, store2) = eval e2 locEnv gloEnv store1 //计算表达式e2，第二个参数的store
 
         let res =
             match ope with
@@ -396,9 +397,39 @@ and eval e locEnv gloEnv store : int * store =
             | "<=" -> if i1 <= i2 then 1 else 0
             | ">=" -> if i1 >= i2 then 1 else 0
             | ">" -> if i1 > i2 then 1 else 0
+            | "<<" -> i1 <<< i2
+            | ">>" -> i1 >>> i2
+            | "&" -> i1 &&& i2
+            | "|" -> i1 ||| i2
+            | "^" -> i1 ^^^ i2
             | _ -> failwith ("unknown primitive " + ope)
 
         (res, store2)
+    | Prim3 (ope, acc, e) -> //复合赋值运算符
+        let (loc, store1) = access acc locEnv gloEnv store //取要求的acc的地址和环境store1
+        let v1=getSto store1 loc //得到acc地址上的值
+        let (v2, store2) = eval e locEnv gloEnv store1 //计算表达式e的值，并得到新环境store2
+        
+        let res= //匹配五种复合赋值运算符，得到计算结果
+            match ope with
+            | "+=" -> v1 + v2
+            | "-=" -> v1 - v2
+            | "*=" -> v1 * v2
+            | "/=" -> v1 / v2
+            | "%=" -> v1 % v2
+            | "<<" -> v1 <<< v2
+            | ">>" -> v1 >>> v2
+            | _ -> failwith ("unknown primitive " + ope)
+        
+        (res, setSto store2 loc res) //返回的store是把计算结果存到左值acc地址上后的新store
+    | TernaryOperator (e1, e2, e3) -> //三目运算符
+        let (v, store1) = eval e1 locEnv gloEnv store //计算表达式e1的值
+        if v <> 0 then //表达式e1不为0
+            let (v2, store2) = eval e2 locEnv gloEnv store1//计算e2
+            (v2,store2) //返回结果和store2
+        else //表达式e1为0
+            let (v2, store2) = eval e3 locEnv gloEnv store1//计算e3
+            (v2,store2) //返回结果和store2
     | Andalso (e1, e2) ->
         let (i1, store1) as res = eval e1 locEnv gloEnv store
 
