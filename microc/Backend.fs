@@ -181,6 +181,7 @@ let rec emitx86 instr =
                     pop r10\n\t\
                     push rax\n\t\
                     push r10\n\t"
+
     | LDI ->
         $";LDI\n\t\
                     pop rax\n\t\
@@ -264,3 +265,36 @@ let rec emitx86 instr =
                     add rsp, 8          ; restore rsp\n\t\
                     pop rbp\n\t\
                     ret\n\t"
+    // | BITAND ->
+    //     ";BITAND\n\t
+    //                 pop r10\n\t
+    //                 pop rax\n\t
+    //                 and rax, r10\n\t
+    //                 push rax\n\t"
+
+    // | OR ->
+    //     $";OR\n\t\
+    //                 pop r10\n\t\
+    //                 pop rax\n\t\
+    //                 or rax, r10\n\t\
+    //                 push rax\n\t"
+
+    // | NOT ->
+    //     ";NOT\n\t\
+    //                 pop rax\n\t\
+    //                 xor rax, -1\n\t\
+    //                 push rax\n\t"
+
+    // | LSHIFT ->
+    //     ";LSHIFT\n\t\
+    //                 pop rcx\n\t\
+    //                 pop rax\n\t\
+    //                 shl rax, cl\n\t\
+    //                 push rax\n\t"
+
+    // | RSHIFT ->
+    //     ";RSHIFT\n\t\
+    //                 pop rcx\n\t\
+    //                 pop rax\n\t\
+    //                 shr rax, cl\n\t\
+    //                 push rax\n\t"

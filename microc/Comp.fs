@@ -40,6 +40,64 @@ open Backend
 
 (* ------------------------------------------------------------------- *)
 
+// 带类型的数据
+type memoryData =
+    | INT of int
+    | BOOL of bool
+    | CHAR of char
+    | POINTER of int
+    | FLOAT of float
+    | STRING of string
+
+    member this.pointer =
+        match this with
+        | POINTER i -> i
+        | INT i -> i
+        | _ -> failwith ("not a pointer")
+
+    member this.int =
+        match this with
+        | INT i -> i
+        | POINTER i -> i
+        | FLOAT i -> int i
+        | BOOL i -> if i then 1 else 0
+        | _ -> failwith ("not int")
+
+    member this.char =
+        match this with
+        | CHAR i -> i
+        | INT i -> char i
+        | _ -> failwith ("not char")
+
+    member this.bool =
+        match this with
+        | BOOL i -> i
+        | _ -> failwith ("not bool")
+
+    member this.float =
+        match this with
+        | FLOAT i -> i
+        | INT i -> float i
+        | _ -> failwith ("not float")
+
+    member this.string =
+        match this with
+        | INT i -> string i
+        | BOOL i -> string i
+        | CHAR i -> string i
+        | POINTER i -> string i
+        | FLOAT i -> string i
+        | STRING i -> string i
+
+    member this.typeName =
+        match this with
+        | INT i -> "int"
+        | BOOL i -> "bool"
+        | CHAR i -> "char"
+        | POINTER i -> "pointer"
+        | FLOAT i -> "float"
+        | STRING i -> "string"
+
 (* Simple environment operations *)
 
 type 'data Env = (string * 'data) list
@@ -99,6 +157,14 @@ let rec allocateWithMsg (kind: int -> Var) (typ, x) (varEnv: VarEnv) =
 and allocate (kind: int -> Var) (typ, x) (varEnv: VarEnv) : VarEnv * instr list =
 
     msg $"allocate called!{(x, typ)}"
+    let defaultValue typ =
+        match typ with
+        | TypI -> INT(0)
+        | TypC -> CHAR(' ')
+        | TypB -> BOOL(false)
+        | TypF -> FLOAT(0.0)
+        | TypP i -> POINTER(-1)
+        | TypS -> STRING("")
 
     // newloc 下个空闲存储位置
     let (env, newloc) = varEnv
@@ -271,13 +337,14 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
         cAccess acc varEnv funEnv
         @ cExpr e varEnv funEnv @ [ STI ]
     | CstI i -> [ CSTI i ]
+    // | CstC i -> [ CSTI i ]
     //测试解释器
     | Print(s,e)     ->  
       cExpr e varEnv funEnv
       @ (match s with
          | "%d"      -> [PRINTI]
          | "%c"      -> [PRINTC]
-        // | "%f"      -> [PRINTF]
+        //  | "%f"      -> [PRINTF]
          | _        -> raise (Failure "unknown primitive 1"))
     | Addr acc -> cAccess acc varEnv funEnv
     | Prim1 (ope, e1) -> //一元表达式
@@ -308,6 +375,7 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
             //  | "&" -> [ BITAND ]
             //  | "|" -> [ BITOR ]
             //  | "^" -> [ BITXOR ]
+            // 需要修改Backend.fs，但个人能力，时间有限，无法完成
              | _ -> raise (Failure "unknown primitive 2"))
     // | Prim4 (ope, acc, e) -> //复合赋值运算符
     //     cAccess acc varEnv funEnv //计算左值acc
@@ -331,6 +399,13 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
             @ [ GOTO labend ] //跳转到end标签
               @ [ Label labelse ] //else标签开始的地方
                 @ cExpr e3 varEnv funEnv @ [ Label labend ] //编译e3表达式，并连上end标签，编译结束
+    | PlusAssign (acc, e) ->
+        cAccess acc varEnv funEnv //计算左值acc
+        @ [DUP] @ [LDI] //DUP:复制栈顶的acc地址，现在栈中有两个
+                        //LDI:取出栈顶的这个acc地址的值
+          @ cExpr e varEnv funEnv //计算e表达式
+
+
     | Andalso (e1, e2) ->
         let labend = newLabel ()
         let labfalse = newLabel ()

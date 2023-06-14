@@ -65,7 +65,8 @@ and access =                         //左值，存储的位置
   | AccVar of string                 (* Variable access        x    *) 
   | AccDeref of expr                 (* Pointer dereferencing  *p   *)
   | AccIndex of access * expr        (* Array indexing         a[e] *)
-  | AccStruct of access * access     (* Struct结构体                 *)
+  | AccStruct of access * access     (* Struct结构体                *)
+
                                                                    
 and stmt =                           //语句                           
   | If of expr * stmt * stmt         (* Conditional                 *)
@@ -82,6 +83,8 @@ and stmt =                           //语句
   | Match of expr * stmt list        (* 模式匹配语法                 *)
   | Pattern of expr * stmt
   | MatchAll of stmt                 (*                             *)
+  | Break                            (*break功能                    *)
+  | Continue                         (*continue功能                 *)
   // 语句块内部，可以是变量声明 或语句的列表                                                              
 
 //语句或声明

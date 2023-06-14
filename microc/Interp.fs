@@ -293,7 +293,6 @@ let rec bindVars xs vs locEnv store : locEnv * store =
    that it maps variable to next available store location, and
    initialize store location(s).
  *)
-//
 
 let rec allocate (typ: typ, name: string, value: memoryData option) (currenEnv, nextloc: int) currStore : locEnv * store =
 
@@ -484,6 +483,8 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
               (choose body)
     | Pattern(e,body) -> exec body locEnv gloEnv store
     | MatchAll (body )-> exec body locEnv gloEnv store
+    | Break -> store
+    | Continue -> store
 and stmtordec stmtordec locEnv gloEnv store =
     match stmtordec with
     | Stmt stmt -> (locEnv, exec stmt locEnv gloEnv store)
