@@ -38,8 +38,8 @@ type memoryData =
     | POINTER of int
     | FLOAT of float
     | STRING of string
-    | ADD of float
-    | DEC of float
+    // | ADD of float
+    // | DEC of float
 
     member this.pointer =
         match this with
@@ -80,15 +80,15 @@ type memoryData =
         | POINTER i -> string i
         | FLOAT i -> string i
         | STRING i -> string i
-    member this.add = 
-        match this with 
-        | FLOAT i ->i = i+1.0
-        | INT i -> i= int (i+1)
+    // member this.add = 
+    //     match this with 
+    //     | FLOAT i ->i = i+1.0
+    //     | INT i -> i= int (i+1)
 
-    member this.dec = 
-        match this with 
-        | FLOAT i ->i = i-1.0
-        | INT i -> i= int (i-1)
+    // member this.dec = 
+    //     match this with 
+    //     | FLOAT i ->i = i-1.0
+    //     | INT i -> i= int (i-1)
 
     member this.typeName =
         match this with
@@ -98,8 +98,8 @@ type memoryData =
         | POINTER i -> "pointer"
         | FLOAT i -> "float"
         | STRING i -> "string"
-        | ADD i -> "add"
-        | DEC i -> "dec"
+        // | ADD i -> "add"
+        // | DEC i -> "dec"
 (* Simple environment operations *)
 // 多态类型 env
 // 环境 env 是 元组 ("name",data) 的列表 ，名称是字符串 string 值 'data 可以是任意类型
@@ -470,6 +470,7 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
                 | Default( body1 ) :: tail -> 
                     exec body1 locEnv gloEnv store1
                     choose tail
+                
               (choose body)
               //对choose函数的调用，并以body参数作为输入
     | Case(e,body) -> exec body locEnv gloEnv store
@@ -499,6 +500,22 @@ and stmtordec stmtordec locEnv gloEnv store =
 
 and eval e locEnv gloEnv store : memoryData * store =
     match e with
+    | ToInt e -> match e with
+                    | CstC c -> (INT( int c-48),store)
+                    | CstF f -> (FLOAT(f), store)
+                    | _ -> failwith ("The input type is incorrect")
+    | ToChar e -> match e with
+                    | CstI i -> (CHAR(char i + char '0'), store)
+                    | _ -> failwith ("The input type is incorrect")
+    | ToFloat e -> match e with
+                    | CstI i -> (INT(i), store)
+                    | _ -> failwith ("The input type is incorrect")
+    | ToString e -> match e with
+                    | CstI i -> (STRING(string i), store)
+                    | CstF f -> (STRING(string f), store)
+                    | CstC c -> (STRING(string c), store)
+                    | _ -> failwith ("The input type is incorrect")
+
     | Access acc ->
         let (loc, store1) = access acc locEnv gloEnv store
         (getSto store1 loc.pointer, store1)
@@ -525,11 +542,6 @@ and eval e locEnv gloEnv store : memoryData * store =
             | "printc" ->
                 (printf "%c" i1.char
                  i1)
-            // | "I++"    -> BOOL(i1.add)
-            // | "++I"    -> BOOL(i1.add)
-            // | "I--"    -> BOOL(i1.dec)
-            // | "--I"    -> BOOL(i1.dec)
-
             | _ -> failwith ("unknown primitive " + ope)
 
         (res, store1)

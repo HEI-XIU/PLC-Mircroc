@@ -32,6 +32,11 @@ and expr =                           // 表达式，右值
   | CstS of string                   (* constant string             *)
   | CstC of char                     (* constant char               *) 
 
+  | ToInt of expr                    (* 类型转换 int                 *)
+  | ToChar of expr                   (* 类型转换 char                *)
+  | ToFloat of expr                  (* 类型转换 foat                *)
+  | ToString of expr                 (* 类型转换 string              *)
+
   | Prim1 of string * expr           (* Unary primitive operator    *)
   | Prim2 of string * expr * expr    (* Binary primitive operator   *)
   | Prim3 of expr * expr * expr      (* 三目运算符                   *)

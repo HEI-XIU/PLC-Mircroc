@@ -41,7 +41,12 @@ let keyword s =
     | "bool"    -> BOOL
     | "false"   -> CSTBOOL false 
     | "true"    -> CSTBOOL true  
-    | "printf" -> PRINTF 
+    | "printf"  -> PRINTF 
+
+    | "Int"     -> TOINT
+    | "Float"   -> TOFLOAT
+    | "Char"    -> TOCHAR
+    | "String"  -> TOSTRING
     | _         -> NAME s   // 缺省情况，是标识符的名字，如 函数名，变量名等
                             // 当所有的关键字没有匹配成功时，则当成标识符
 // 字符串转义符处理函数
@@ -77,8 +82,6 @@ rule Token = parse          // 每个 规则rule 会生成为一个函数，函�
 
   | ['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
                     { keyword (lexemeAsString lexbuf) } //标识符处理
-//   | "++"            { INC }
-//   | "--"            { DECR }  
   | "+="            { PLUSASSIGN }
   | "-="            { MINUSASSIGN }
   | "*="            { TIMESASSIGN }
