@@ -205,10 +205,17 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
     | Return None -> [ RET(snd varEnv - 1) ]
     | Return (Some e) -> cExpr e varEnv funEnv @ [ RET(snd varEnv) ]
 
+
+//语句 或 声明
 and cStmtOrDec stmtOrDec (varEnv: VarEnv) (funEnv: FunEnv) : VarEnv * instr list =
     match stmtOrDec with
-    | Stmt stmt -> (varEnv, cStmt stmt varEnv funEnv)
-    | Dec (typ, x) -> allocateWithMsg Locvar (typ, x) varEnv
+    | Stmt stmt -> (varEnv, cStmt stmt varEnv funEnv) //语句
+    | Dec (typ, x) -> allocateWithMsg Locvar (typ, x) varEnv //调用allocateWithMsg函数为局部变量分配空间
+    | DecAndAssign (typ, x, expr) ->
+        let (varEnv1,code) = allocateWithMsg Locvar (typ, x) varEnv //调用allocateWithMsg函数为局部变量分配空间
+        let (code2) = cExpr (Assign (AccVar x, expr)) varEnv1 funEnv //获取表达式expr给该变量x赋值的汇编指令
+        let res = code @ code2 @ [INCSP -1] //返回varEnv1这个变量环境 和 两个汇编指令列表的拼接，最后释放空间
+        (varEnv1, res)//返回环境变量和汇编指令列表
 
 (* Compiling micro-C expressions:
 
@@ -238,17 +245,18 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
         // | "%f"      -> [PRINTF]
          | _        -> raise (Failure "unknown primitive 1"))
     | Addr acc -> cAccess acc varEnv funEnv
-    | Prim1 (ope, e1) ->
+    | Prim1 (ope, e1) -> //一元表达式
         cExpr e1 varEnv funEnv
-        @ (match ope with
+        @ (match ope with //操作符模式匹配
            | "!" -> [ NOT ]
            | "printi" -> [ PRINTI ]
            | "printc" -> [ PRINTC ]
+           | "~" -> [ BITNOT ]
            | _ -> raise (Failure "unknown primitive 1"))
-    | Prim2 (ope, e1, e2) ->
-        cExpr e1 varEnv funEnv
-        @ cExpr e2 varEnv funEnv
-          @ (match ope with
+    | Prim2 (ope, e1, e2) -> //二元表达式
+        cExpr e1 varEnv funEnv //计算e1表达式
+        @ cExpr e2 varEnv funEnv //计算e2表达式
+          @ (match ope with //匹配操作符
              | "*" -> [ MUL ]
              | "+" -> [ ADD ]
              | "-" -> [ SUB ]
@@ -259,8 +267,35 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
              | "<" -> [ LT ]
              | ">=" -> [ LT; NOT ]
              | ">" -> [ SWAP; LT ]
-             | "<=" -> [ SWAP; LT; NOT ]
+             | "<=" -> [ SWAP; LT; NOT ] //指令顺序：从左往右
+             | "<<" -> [ BITLEFT ]
+             | ">>" -> [ BITRIGHT ]
+             | "&" -> [ BITAND ]
+             | "|" -> [ BITOR ]
+             | "^" -> [ BITXOR ]
              | _ -> raise (Failure "unknown primitive 2"))
+    | Prim3 (ope, acc, e) -> //复合赋值运算符
+        cAccess acc varEnv funEnv //计算左值acc
+        @ [DUP] @ [LDI] //DUP:复制栈顶的acc地址，现在栈中有两个
+                        //LDI:取出栈顶的这个acc地址的值
+          @ cExpr e varEnv funEnv //计算e表达式
+            @ (match ope with //匹配操作符
+              | "+=" -> [ ADD ] @ [STI] //栈顶acc的值+表达式e的结果，然后写入栈顶进行赋值，即set s[s[sp-1]]
+              | "-=" -> [ SUB ] @ [STI]
+              | "*=" -> [ MUL ] @ [STI]
+              | "/=" -> [ DIV ] @ [STI]
+              | "%=" -> [ MOD ] @ [STI]
+              | _ -> raise (Failure "unknown primitive 3"))
+    | TernaryOperator (e1,e2,e3) -> //三目运算符
+        let labelse = newLabel () //生成else语句的标签
+        let labend = newLabel () //生成end语句的标签
+        
+        cExpr e1 varEnv funEnv //计算e1表达式
+        @ [ IFZERO labelse ] //如果表达式e等于0，跳到else标签
+          @ cExpr e2 varEnv funEnv //编译e2表达式
+            @ [ GOTO labend ] //跳转到end标签
+              @ [ Label labelse ] //else标签开始的地方
+                @ cExpr e3 varEnv funEnv @ [ Label labend ] //编译e3表达式，并连上end标签，编译结束
     | Andalso (e1, e2) ->
         let labend = newLabel ()
         let labfalse = newLabel ()
