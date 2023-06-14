@@ -38,7 +38,6 @@ type memoryData =
     | POINTER of int
     | FLOAT of float
     | STRING of string
-    | TypeStruct of string
 
     member this.pointer =
         match this with
@@ -79,9 +78,6 @@ type memoryData =
         | POINTER i -> string i
         | FLOAT i -> string i
         | STRING i -> string i
-    member this.typestruct =
-        match this with
-        | INT i -> string i
 
     member this.typeName =
         match this with
@@ -91,7 +87,6 @@ type memoryData =
         | POINTER i -> "pointer"
         | FLOAT i -> "float"
         | STRING i -> "string"
-        | TypeStruct i -> "typestruct"
 (* Simple environment operations *)
 // 多态类型 env
 // 环境 env 是 元组 ("name",data) 的列表 ，名称是字符串 string 值 'data 可以是任意类型
