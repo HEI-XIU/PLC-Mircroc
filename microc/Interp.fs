@@ -484,6 +484,7 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
               (choose body)
     | Pattern(e,body) -> exec body locEnv gloEnv store
     | MatchAll (body )-> exec body locEnv gloEnv store
+    
 and stmtordec stmtordec locEnv gloEnv store =
     match stmtordec with
     | Stmt stmt -> (locEnv, exec stmt locEnv gloEnv store)

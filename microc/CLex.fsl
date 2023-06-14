@@ -104,6 +104,15 @@ rule Token = parse          // 每个 规则rule 会生成为一个函数，函�
   | '<'             { LT }
   | ">="            { GE }
   | "<="            { LE }
+  | '?'             { QUESMARK }    //问号【用于三目运算符】
+  | ':'             { COLON }       //冒号【用于三目运算符】
+  | "<<"            { BITLEFT }
+  | ">>"            { BITRIGHT }
+  | "~"             { BITNOT }
+  | "^"             { BITXOR }  
+  | "|"             { BITOR }
+  | "&"             { BITAND } 
+
   | "_"             { ALL }
   | ":"             { COLON }
   | "->"            { DEAL }
