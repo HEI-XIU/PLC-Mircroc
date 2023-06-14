@@ -268,11 +268,11 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
              | ">=" -> [ LT; NOT ]
              | ">" -> [ SWAP; LT ]
              | "<=" -> [ SWAP; LT; NOT ] //指令顺序：从左往右
-             | "<<" -> [ BITLEFT ]
-             | ">>" -> [ BITRIGHT ]
-             | "&" -> [ BITAND ]
-             | "|" -> [ BITOR ]
-             | "^" -> [ BITXOR ]
+            //  | "<<" -> [ BITLEFT ]
+            //  | ">>" -> [ BITRIGHT ]
+            //  | "&" -> [ BITAND ]
+            //  | "|" -> [ BITOR ]
+            //  | "^" -> [ BITXOR ]
              | _ -> raise (Failure "unknown primitive 2"))
     // | Prim4 (ope, acc, e) -> //复合赋值运算符
     //     cAccess acc varEnv funEnv //计算左值acc
