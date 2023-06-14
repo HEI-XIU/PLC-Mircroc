@@ -205,6 +205,41 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
     | Return None -> [ RET(snd varEnv - 1) ]
     | Return (Some e) -> cExpr e varEnv funEnv @ [ RET(snd varEnv) ]
 
+    |DoWhile (stmt1, e) -> //dowhile循环
+        let labbegin = newLabel () //生成begin标签
+        let labtest = newLabel () //生成test标签
+
+        cStmt stmt1 varEnv funEnv //先编译语句stmt
+        @ [ GOTO labtest; Label labbegin ] //跳转到test标签；begin标签开始的地方
+        @ cStmt stmt1 varEnv funEnv //编译语句stmt
+          @ [ Label labtest ] //test标签
+            @ cExpr e varEnv funEnv @ [ IFNZRO labbegin ] //编译表达式e；如果不等于0跳转到begin，实现循环
+
+    | DoUntil (stmt1, e) -> //dountil循环
+        let labbegin = newLabel () //生成begin标签
+        let labtest = newLabel () //生成test标签
+
+        cStmt stmt1 varEnv funEnv //先编译语句stmt
+        @ [ GOTO labtest; Label labbegin ] //跳转到test标签；begin标签开始的地方
+        @ cStmt stmt1 varEnv funEnv //编译语句stmt
+          @ [ Label labtest ] //test标签
+            @ cExpr e varEnv funEnv @ [ IFZERO labbegin ] //编译表达式e；如果等于0跳转到begin，实现循环
+            
+    | For (e1, e2, e3, body) -> //for循环
+        let labbegin = newLabel () //生成begin标签
+        let labtest = newLabel () //生成test标签
+
+        // 把for循环转换为while循环进行理解
+        cExpr e1 varEnv funEnv//先编译初始化表达式e1
+        @ [ INCSP -1 ]//释放空间
+          @ [ GOTO labtest; Label labbegin ]//跳转到test标签；begin标签开始的地方
+            @ cStmt body varEnv funEnv//编译函数体语句
+              @ cExpr e3 varEnv funEnv//编译循环后的操作表达式
+                @ [ INCSP -1 ]//释放空间
+                  @ [ Label labtest ]//test标签
+                    @ cExpr e2 varEnv funEnv//编译条件表达式e2 
+                      @ [IFNZRO labbegin]//如果e2不为0，就跳转到begin标签进行循环
+
 
 //语句 或 声明
 and cStmtOrDec stmtOrDec (varEnv: VarEnv) (funEnv: FunEnv) : VarEnv * instr list =
