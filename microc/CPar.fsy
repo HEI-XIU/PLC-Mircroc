@@ -158,7 +158,7 @@ StmtM:  /* No unbalanced if-else */
   | IF LPAR Expr RPAR StmtM ELSE StmtM  { If($3, $5, $7)       }
   | WHILE LPAR Expr RPAR StmtM          { While($3, $5)        }
   | DO StmtM WHILE LPAR Expr RPAR SEMI  { DoWhile($2,$5)       }
-  | DO StmtM UNTIL LPAR Expr RPAR SEMI { DoUntil($2, $5) }
+  | DO StmtM UNTIL LPAR Expr RPAR SEMI  { DoUntil($2, $5) }
   | FOR LPAR Expr SEMI Expr SEMI Expr RPAR StmtM     { For($3,$5,$7,$9)  }
   | SWITCH LPAR Expr RPAR LBRACE StmtCase RBRACE        { Switch($3,$6)  }
   | MATCH Expr WITH StmtPattern         { Match($2,$4)      } 

@@ -1,9 +1,7 @@
 void main(int n) {
-    int i;
-    i=0;
-   do {
-        printf("%d",i);
-        i=i+1;
-   }  
-   until(i<n);
+    do{
+      n = n+1;
+      printf("%d",n);
+      
+    }until(n==3);
 }
