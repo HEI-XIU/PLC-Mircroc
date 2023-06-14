@@ -1,8 +1,8 @@
 void main(int n) {
 
     char a;
-    a = '3';
-    print("%c",a);
-    print("%d",n);
+    a = 'c';
+    printf("%c",a);
+    printf("%d",n);
 
 }

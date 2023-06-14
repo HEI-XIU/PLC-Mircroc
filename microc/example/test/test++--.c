@@ -1,24 +1,29 @@
+//无法实现
 void main(int n) {
    int i;
-
+//  printf("%d",i++) ;
    i=0;
    do {
-       print i++;
+        i++;
+       printf("%d",i) ;
    } 
    while(i<n); 
    i=0;
    do {
-       print ++i;
+        ++i;
+       printf("%d",i) ;
    }  
    while(i<n);
    i=20;
    do {
-       print i--;
+        i--;
+       printf("%d",i) ;
    } 
    while(i>n); 
    i=20;
    do {
-       print --i;
+        --i;
+       printf("%d",i) ;
    }  
    while(i>n);
 }

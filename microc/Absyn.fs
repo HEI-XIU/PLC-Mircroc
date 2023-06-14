@@ -13,8 +13,9 @@ module Absyn
 type typ =
   | TypI                             (* Type int                    *)
   | TypC                             (* Type char                   *)
+  | TypB                             (*Type boolean                 *)
   | TypS                             (* Type string                 *)
-  | TypF                             (* Type float                 *)
+  | TypF                             (* Type float                  *)
   | TypA of typ * int option         (* Array type                  *)
   | TypP of typ                      (* Pointer type                *)
   
@@ -24,11 +25,12 @@ and expr =                           // 表达式，右值
   | Access of access                 (* x    or  *p    or  a[e]     *) //访问左值（右值）
   | Assign of access * expr          (* x=e  or  *p=e  or  a[e]=e   *)
   | Addr of access                   (* &x   or  &*p   or  &a[e]    *)
+
   | CstI of int                      (* Constant  int               *)
-  | CstF of float32                  (* Constant  foat              *)
-  | ConstString of string            (* constant string             *)
-  | ConstChar of char                (* constant char               *) 
-  | ConstNull of int                 (* default 0                   *)  
+  | CstF of float                    (* Constant  foat              *)
+  | CstB of bool                     (* Constant  Bool              *)
+  | CstS of string                   (* constant string             *)
+  | CstC of char                     (* constant char               *) 
 
   | Prim1 of string * expr           (* Unary primitive operator    *)
   | Prim2 of string * expr * expr    (* Binary primitive operator   *)
@@ -36,6 +38,15 @@ and expr =                           // 表达式，右值
 
   | Inc of access                    (* ++                          *)
   | Decr of access                   (* --                          *)
+  | PlusAssign of access * expr       // x += a
+  | MinusAssign of access * expr      // x -= a
+  | TimesAssign of access * expr      // x *=  a
+  | DivAssign of access * expr      // x /= a
+  | PrePlus of string * access      // ++x
+  | RearPlus of access * string       // x++
+  | PreMinus of string * access     // --x
+  | RearMinus of access * string    // x--
+  | ModAssign of access * expr      // x %= a
   | Print of string * expr
 
   | Andalso of expr * expr           (* Sequential and              *)
@@ -59,7 +70,7 @@ and stmt =                           //语句
   | Switch of expr * stmt list       (* Switch语法                  *)
   | Case of expr * stmt
   | Default of stmt
-  | Match of expr * stmt list               (* 模式匹配语法                 *)
+  | Match of expr * stmt list        (* 模式匹配语法                 *)
   | Pattern of expr * stmt
   | MatchAll of stmt                 (*                             *)
   // 语句块内部，可以是变量声明 或语句的列表                                                              
@@ -67,6 +78,7 @@ and stmt =                           //语句
 and stmtordec =                                                    
   | Dec of typ * string              (* Local variable declaration  *)
   | Stmt of stmt                     (* A statement                 *)
+  | DecAndAssign of typ * string * expr // Assign variable when
 
 // 顶级声明 可以是函数声明或变量声明
 and topdec = 

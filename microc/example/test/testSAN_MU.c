@@ -1,6 +1,6 @@
 void main(int n) {
-    int i;
-    i =  n>2?12:21;
-    print i;
+    string s;
+    s =  n>2?"true":"false";
+    printf("%s",s);
 
 }
