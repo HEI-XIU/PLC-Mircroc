@@ -232,7 +232,16 @@ let x86patch code =
    * varenv  is the local and global variable environment
    * funEnv  is the global function environment
 *)
+let mutable lablist : label list = []
 
+let rec headlab labs = 
+    match labs with
+        | lab :: tr -> lab
+        | []        -> failwith "Error: unknown break"
+let rec dellab labs =
+    match labs with
+        | lab :: tr ->   tr
+        | []        ->   []
 let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
     match stmt with
     | If (e, stmt1, stmt2) ->
@@ -249,10 +258,14 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
         let labbegin = newLabel ()
         let labtest = newLabel ()
 
+        let labend = newLabel ()
+        lablist <- [labend; labtest; labbegin]
+
         [ GOTO labtest; Label labbegin ]
         @ cStmt body varEnv funEnv
           @ [ Label labtest ]
-            @ cExpr e varEnv funEnv @ [ IFNZRO labbegin ]
+            // @ cExpr e varEnv funEnv @ [ IFNZRO labbegin ]
+            @ cExpr e varEnv funEnv @ [ IFNZRO labbegin; Label labend ]
     | Expr e -> cExpr e varEnv funEnv @ [ INCSP -1 ]
     | Block stmts ->
 
@@ -275,21 +288,27 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
         let labbegin = newLabel () //生成begin标签
         let labtest = newLabel () //生成test标签
 
+        let labend = newLabel ()
+        lablist <- [labend; labtest; labbegin]
         cStmt stmt1 varEnv funEnv //先编译语句stmt
         @ [ GOTO labtest; Label labbegin ] //跳转到test标签；begin标签开始的地方
         @ cStmt stmt1 varEnv funEnv //编译语句stmt
           @ [ Label labtest ] //test标签
-            @ cExpr e varEnv funEnv @ [ IFNZRO labbegin ] //编译表达式e；如果不等于0跳转到begin，实现循环
+            // @ cExpr e varEnv funEnv @ [ IFNZRO labbegin ] //编译表达式e；如果不等于0跳转到begin，实现循环
+            @ cExpr e varEnv funEnv @ [ IFNZRO labbegin; Label labend ]
 
     | DoUntil (stmt1, e) -> //dountil循环
         let labbegin = newLabel () //生成begin标签
         let labtest = newLabel () //生成test标签
 
+        let labend = newLabel ()
+        lablist <- [labend; labtest; labbegin]
         cStmt stmt1 varEnv funEnv //先编译语句stmt
         @ [ GOTO labtest; Label labbegin ] //跳转到test标签；begin标签开始的地方
         @ cStmt stmt1 varEnv funEnv //编译语句stmt
           @ [ Label labtest ] //test标签
-            @ cExpr e varEnv funEnv @ [ IFZERO labbegin ] //编译表达式e；如果等于0跳转到begin，实现循环
+            // @ cExpr e varEnv funEnv @ [ IFZERO labbegin ] //编译表达式e；如果等于0跳转到begin，实现循环
+            @ cExpr e varEnv funEnv @ [ IFNZRO labbegin; Label labend ]
             
     | For (e1, e2, e3, body) -> //for循环
         let labbegin = newLabel () //生成begin标签
@@ -305,6 +324,16 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
                   @ [ Label labtest ]//test标签
                     @ cExpr e2 varEnv funEnv//编译条件表达式e2 
                       @ [IFNZRO labbegin]//如果e2不为0，就跳转到begin标签进行循环
+    | Break -> 
+    //     let labend = newLabel ()
+        let labend = headlab lablist
+        [GOTO labend]
+    //continue功能解读
+    | Continue -> 
+    //     // let labbegin = newLabel ()
+        let lablist   = dellab lablist
+        let labbegin = headlab lablist
+        [GOTO labbegin]
 
 
 //语句 或 声明
