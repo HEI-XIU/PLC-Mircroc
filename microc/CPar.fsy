@@ -23,35 +23,33 @@ let nl = CstI 10 //  \n 的 ASCII 码
 %token <float> CSTFLOAT
 %token <char> CSTCHAR
 
-%token CHAR ELSE IF INT NULL PRINT PRINTLN RETURN VOID WHILE FOR DOWHILE DO UNTIL DOUNTIL SWITCH CASE MATCH WITH DEFAULT QUE ALL STRING FLOAT BOOL PRINTF BREAK CONTINUE IN STRUCT
+%token ELSE IF   VOID BOOL INT CHAR STRING FLOAT    NULL   PRINT PRINTF PRINTLN RETURN    WHILE FOR DOWHILE DO UNTIL DOUNTIL SWITCH CASE MATCH WITH DEFAULT QUE ALL BREAK CONTINUE IN STRUCT
 
 %token PLUS MINUS TIMES DIV MOD DOUBLEPLUS DOUBLEMINUS PLUSASSIGN MINUSASSIGN TIMESASSIGN DIVASSIGN MODASSIGN TOCHAR TOINT TOFLOAT TOSTRING POINT SIZEOF TYPEOF
-%token EQ NE GT LT GE LE
-%token NOT SEQOR SEQAND 
-%token LPAR RPAR LBRACE RBRACE LBRACK RBRACK SEMI COMMA ASSIGN AMP COLON DEAL MATCHS BITNOT BITLEFT BITRIGHT BITXOR BITOR
+//       +    -     *    /   %    ++         --           +=        -=           *=          /=          %  强转char 强转int 强转float 强转string  . 变量大小  字符大小
+%token EQ NE GT LT GE LE //== !+ > < >= <=
+%token NOT SEQOR SEQAND //逻辑非！ 逻辑或|| 逻辑与&&
+%token LPAR RPAR LBRACE RBRACE LBRACK RBRACK SEMI COMMA ASSIGN AMP COLON DEAL MATCHS
+      //(     )   {       }     [       ]     ;     ,     =     *   :     ->    |
 %token EOF
 
-%right ASSIGN             /* lowest precedence */  // 最下面的优先级最高
-%nonassoc PRINT            //打印
-%right QUE COLON            //问号 冒号
-// %right QUESMARK COLON     
-%left SEQOR           //逻辑或||      
-%left SEQAND           //逻辑与&&
-%left EQ NE           //== !=
-%nonassoc GT LT GE LE         //大于 小于 大于等于 小于等于
-%left PLUS MINUS         //加 减
-%left TIMES DIV MOD       //乘 除 取余
-%right PLUSASSIGN MINUSASSIGN TIMESASSIGN DIVASSIGN MODASSIGN
-// INC DECR
+%right ASSIGN                         /* lowest precedence */  // 最下面的优先级最高
+%nonassoc PRINT                       //打印
+%right QUE COLON                      //问号 冒号 
+%left SEQOR                           //逻辑或||      
+%left SEQAND                          //逻辑与&&
+%left EQ NE                           //== !=
+%nonassoc GT LT GE LE                 //大于 小于 大于等于 小于等于
+%left PLUS MINUS                      //加 减
+%left TIMES DIV MOD                   //乘 除 取余
+%right PLUSASSIGN MINUSASSIGN TIMESASSIGN DIVASSIGN MODASSIGN //+= -+ *= /= %=
 //自增和自减运算符的优先级为右结合
-%left BITLEFT BITRIGHT 
-%nonassoc NOT AMP DOUBLEPLUS DOUBLEMINUS BITNOT
+%nonassoc NOT AMP DOUBLEPLUS DOUBLEMINUS 
 %right TOCHAR TOINT TOFLOAT TOSTRING
 //运算符是不可结合
-%nonassoc LBRACK          /* highest precedence  */
-
-%start Main            // 语法开始符号
-%type <Absyn.program> Main   // 开始符号，对应抽象语法树节点类型, program
+%nonassoc LBRACK                      /* highest precedence  */
+%start Main                           // 语法开始符号
+%type <Absyn.program> Main            // 开始符号，对应抽象语法树节点类型, program
 
 %%
 

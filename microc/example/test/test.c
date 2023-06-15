@@ -27,7 +27,7 @@ void main(int n) {
     char i = 1;
     printf("%d",(Int) '9' );
     printf("%c",(Char)1 );
-    printf("%d",(String)12 );
+    printf("%s",(String)12 );
 
     // printf("%f",(Float)13);
 

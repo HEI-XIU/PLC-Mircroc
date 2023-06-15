@@ -81,6 +81,7 @@ type memoryData =
         | POINTER i -> string i
         | FLOAT i -> string i
         | STRING i -> string i
+        | _ ->   failwith ("not string")
 
     member this.typeName =
         match this with
@@ -98,6 +99,7 @@ type memoryData =
         | STRING s -> TypS
         | ARRAY(typ,i,size) ->  TypA(typ,Some size)
         | STRUCT (s,i,size) -> TypeStruct s
+        | _ ->   failwith (" 该类型暂不支持")
 
 (* Simple environment operations *)
 // 多态类型 env
@@ -179,7 +181,7 @@ let rec lookupFunc env x =
     | [] -> failwith (x + " not found")
     | (y, v) :: yr -> if x = y then v else lookupFunc yr x
 
-//查找结构体
+//查找称为 x结构体
 let rec structLookup env x index=
     match env with
     | []                            -> failwith(x + " not found")
@@ -275,7 +277,11 @@ n = 8;
 //遍历 xs vs 列表,然后调用 bindVar实现单个值的绑定
 let store2str store =
     String.concat "" (List.map string (Map.toList store))
+    //将一个映射(Map)数据结构store转换为一个字符串。
+    //List.map string (Map.toList store)：将Map中的每一个(key,value)键值对转化成字符串形式，生成一个字符串列表
+    //String.concat “”：将字符串列表中的所有元素连接起来，组成一个新的字符串，使用空字符串""作为分隔符，即不插入任何分隔符。
 
+//将一个变量名x和它的值v进行绑定，把它们添加到环境(env)和存储器(store)中。
 let bindVar x v (env, nextloc) store : locEnv * store =
     let env1 = (x, nextloc) :: env
     msg $"bindVar:\n%A{env1}\n"
@@ -288,7 +294,7 @@ let bindVar x v (env, nextloc) store : locEnv * store =
 
     ret 
 
-
+//将多个变量名xs和变量值vs进行绑定。该函数通过调用一个名为bindVar的函数实现将一个变量名和变量值进行绑定，并将结果添加到环境和存储器
 let rec bindVars xs vs locEnv store : locEnv * store =
     let res =
         match (xs, vs) with
@@ -307,7 +313,9 @@ let rec bindVars xs vs locEnv store : locEnv * store =
    that it maps variable to next available store location, and
    initialize store location(s).
  *)
-
+//用来实现内存分配和更新内存状态的功能。
+//函数传入了一些参数，包括要分配的变量的类型(typ)、变量的名称(name)、变量的初始值(value，如果有的话)、当前的环境(currenEnv)、下一个可用内存位置(nextloc)
+//以及当前存储状态(currStore)。函数会返回一个新的环境(locEnv)和新的存储状态(store)，这些新的环境和存储状态包含了新分配的变量。
 let rec allocate (typ: typ, name: string, value: memoryData option) (currenEnv, nextloc: int) structEnv currStore : locEnv * store =
 
     let defaultValue typ =
@@ -320,12 +328,13 @@ let rec allocate (typ: typ, name: string, value: memoryData option) (currenEnv, 
         | TypS -> STRING("")
         | TypeStruct s-> STRUCT(s,0,0)
         | _ -> failwith ("cant init")
-
+//给定一个类型(typ)和下一个可用内存位置(nextloc)，根据不同的类型分配内存并返回分配内存后的新状态。代码使用了OCaml的模式匹配来区分不同的类型并进行相应的处理。
     let (newNextloc: int, value: memoryData, newStore: store) =
         match typ with
+            //新的内存位置、值和状态被存储在一个元组(newNextloc, value, newStore)中返回
             | TypA (t, Some i) -> (nextloc+i, (ARRAY(t,nextloc,i)), initSto nextloc i currStore (defaultValue t))
             | TypA (t, None) -> (nextloc, (ARRAY(typ,nextloc,0)), currStore)
-        // 默认值是 -1
+            // 默认值是 -1
             | TypeStruct s -> 
                             let (index,arg,size) = structLookup structEnv s 0
                             (nextloc+size, (STRUCT (s,index,size)), initSto nextloc size currStore (defaultValue typ) )
@@ -381,7 +390,7 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (structEnv:structEnv) (store
             // let (v, store2) = eval e locEnv gloEnv store1
             let (resCmped, store2) = eval e locEnv gloEnv structEnv store1
             // 求值  就是在更新变量，比如 while(i++) 就是i++ 的更新操作
-            // 虽然看不懂 但是盲猜是在干这个
+            // 虽然看太不懂 但是盲猜是在干这个
             // 继续循环
             // if v <> 0 then
             if resCmped.bool then
@@ -398,7 +407,6 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (structEnv:structEnv) (store
         store1
 
     | Block stmts ->
-
         // 语句块 解释辅助函数 loop
         let rec loop ss (locEnv, store) =
             match ss with
@@ -435,7 +443,7 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (structEnv:structEnv) (store
             else storeCmped  
         //执行语句
         loop storeAssigned
-    | Forin(acc,e1,e2,body) -> 
+    | Forin(acc,e1,e2,body) -> //实现的应该是js语法而不是Python语法的for in range
           let (loc, store1) = access acc locEnv gloEnv structEnv store
           let (re, store2) = eval e1 locEnv gloEnv structEnv store1
           let (re2,store3) = eval e2 locEnv gloEnv structEnv store2
@@ -444,6 +452,7 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (structEnv:structEnv) (store
                           if i<>(re2.int+1) then loop (i+1) (exec body locEnv gloEnv structEnv (setSto stores loc.int (INT i)) )
                                     else (stores)
                       loop re.int store3 
+          | _ ->   failwith ("Forin语法错误")
                       
     | DoWhile(body,e) -> 
     //body为函数体，e为while()括号内判断表达式，用于判定是否结束
@@ -477,8 +486,9 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (structEnv:structEnv) (store
                                 else choose tail
                 | [] -> store1
                 | Default( body1 ) :: tail -> 
-                    exec body1 locEnv gloEnv structEnv store1
+                    let (store2) = exec body1 locEnv gloEnv structEnv store1
                     choose tail
+                | _ ->   failwith ("Switch语法错误")
                 
               (choose body)
               //对choose函数的调用，并以body参数作为输入
@@ -494,14 +504,16 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (structEnv:structEnv) (store
                                    else choose tail
                 | [] -> store1 
                 | MatchAll( body1) :: tail ->
-                    exec body1 locEnv gloEnv structEnv store1
+                    let (store2) = exec body1 locEnv gloEnv structEnv store1
                     choose tail
+                | _ ->   failwith ("Match语法错误")
 
               (choose body)
     | Pattern(e,body) -> exec body locEnv gloEnv structEnv store
     | MatchAll (body )-> exec body locEnv gloEnv structEnv store
     | Break -> store
     | Continue -> store
+    | _ ->  failwith ("exec 内部错误")
 and stmtordec stmtordec locEnv gloEnv store structEnv =
     match stmtordec with
     | Stmt stmt -> (locEnv, exec stmt locEnv gloEnv structEnv store )
@@ -517,7 +529,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
                   | ARRAY (typ , i,size) -> (INT size,s1)
                   | STRING s -> (INT s.Length,s1)
                   | _ -> (INT 1,s1)
-
+    //获取变量代码
 
     // | Typeof e -> let (res,s) = eval e locEnv gloEnv structEnv store
     //               match res.checktype with
@@ -530,7 +542,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
     //               | TypA (typ,i) -> (STRING "Array",s)
     //               | TypeStruct str  -> (STRING ("Struct "+str),s)
 
-
+    //类型的强制转换
     | ToInt e -> match e with
                     | CstC c -> (INT( int c-48),store)
                     | CstF f -> (FLOAT(f), store)
@@ -554,13 +566,14 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let (res, store2) = eval e locEnv gloEnv structEnv store1
         (res, setSto store2 loc.pointer res)
-                        
+    // 对常量表达式(CstI, CstB, CstF, CstS, CstC)和地址表达式(Addr)的求值。                 
     | CstI i -> (INT(i), store)
     | CstB i -> (BOOL(i), store)
     | CstF i -> (FLOAT(i), store)
     | CstS i -> (STRING(i), store)
     | CstC i -> (CHAR(i),store)
     | Addr acc -> access acc locEnv gloEnv structEnv store
+    //一元基本算子
     | Prim1 (ope, e1) ->
         let (i1, store1) = eval e1 locEnv gloEnv structEnv store
 
@@ -576,6 +589,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | _ -> failwith ("unknown primitive " + ope)
 
         (res, store1)
+    //打印输出
     | Print (ope , e1) ->
         let (i1,store1) = eval e1 locEnv gloEnv structEnv store
 
@@ -590,7 +604,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | _      -> (printf "%s " i1.string;i1) 
 
         (res, store1)
-
+    //二元基本算子
     | Prim2 (ope, e1, e2) ->
 
         let (i1, store1) = eval e1 locEnv gloEnv structEnv store
@@ -669,7 +683,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | _ -> failwith ("unknown primitive " + ope)
 
         (res, store2)
-
+    //三目运算
     | Prim3 (cond, e1, e2) ->
         let (v1, store1) = eval cond locEnv gloEnv structEnv store
 
@@ -687,10 +701,15 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             eval e2 locEnv gloEnv structEnv store1
         else
             res
+    //+=操作
     | PlusAssign (acc, e) ->
+    // 根据变量的信息，可以通过访问(locEnv/gloEnv/structEnv)来查找该变量在存储状态(store)中所表示的地址(loc），最终通过访问该地址获取变量的值，并返回该地址和经过存储状态修改的存储结果。
+    // access函数的参数包括一个表示变量的访问路径(acc)，当前环境(locEnv)、全局环境(gloEnv)、结构体环境(structEnv)以及当前存储状态(store)。
+    // 具体的访问路径是一个由多个部分构成的列表，每个部分描述了变量被访问的方式。例如，访问全局变量a的访问路径为[Var "a"]；访问结构体MyStruct中的变量field1的访问路径为[Var "MyStruct"; Var "field1"]。
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let (res, store2) = eval e locEnv gloEnv structEnv store1
         let tmp = getSto store1 loc.pointer
+        //获取值的类型
 
         let var =
             match tmp with
@@ -701,7 +720,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | _ -> failwith ("please input int or float")
 
         (var, setSto store2 loc.pointer var)
-
+    //-=操作
     | MinusAssign (acc, e) ->
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let (res, store2) = eval e locEnv gloEnv structEnv store1
@@ -716,7 +735,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | _ -> failwith ("please input int or float")
 
         (var, setSto store2 loc.pointer var)
-
+    //*=操作
     | TimesAssign (acc, e) ->
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let (res, store2) = eval e locEnv gloEnv structEnv store1
@@ -731,7 +750,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | _ -> failwith ("please input int or float")
 
         (var, setSto store2 loc.pointer var)
-
+    // /=操作
     | DivAssign (acc, e) ->
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let (res, store2) = eval e locEnv gloEnv structEnv store1
@@ -746,7 +765,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | _ -> failwith ("please input int or float")
 
         (var, setSto store2 loc.pointer var)
-
+    // %=操作
     | ModAssign (acc, e) ->
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let (res, store2) = eval e locEnv gloEnv structEnv store1
@@ -760,7 +779,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | _ -> failwith ("please input int or float")
 
         (var, setSto store2 loc.pointer var)
-
+    //前++操作
     | PrePlus (ope, acc) ->
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let tmp = getSto store1 loc.pointer
@@ -770,7 +789,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | FLOAT i -> FLOAT(tmp.float+1.0)
             | _ -> failwith ("please input int or float")
         (var, setSto store loc.pointer var)
-
+    //后++操作
     | RearPlus (acc, ope) ->
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let tmp = getSto store1 loc.pointer
@@ -780,7 +799,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | FLOAT i -> FLOAT(tmp.float+1.0)
             | _ -> failwith ("please input int or float")
         (var, setSto store loc.pointer var)
-
+    //前--操作
     | PreMinus (ope, acc) ->
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let tmp = getSto store1 loc.pointer
@@ -790,7 +809,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
             | FLOAT i -> FLOAT(tmp.float-1.0)
             | _ -> failwith ("please input int or float")
         (var, setSto store loc.pointer var)
-
+    //后--操作
     | RearMinus (acc, ope) ->
         let (loc, store1) = access acc locEnv gloEnv structEnv store
         let tmp = getSto store1 loc.pointer
@@ -809,6 +828,7 @@ and eval e locEnv gloEnv  structEnv store : memoryData * store =
         else
             eval e2 locEnv gloEnv structEnv store1
     | Call (f, es) -> callfun f es locEnv gloEnv structEnv store
+    | _ -> failwith ("unknown primitive ")
 
 and access acc locEnv gloEnv structEnv store : memoryData * store =
     match acc with
@@ -821,10 +841,14 @@ and access acc locEnv gloEnv structEnv store : memoryData * store =
       let size = 
         match aval with
         | ARRAY (name,i,size) -> size
+        | _ -> failwith ("ARRAY unknown primitive")
       if(i.int>=size) then  failwith( " index out of size" )
       elif(i.int<0) then failwith( " index out of size" )
       else (INT(aval.int + i.int), store2) 
+    //表达式类型AccStruct(结构访问)的求值部分。描述了对结构体中某个成员的访问。
     | AccStruct(acc,acc2) ->  let (b, store1) = access acc locEnv gloEnv structEnv store
+    //从存储状态得到该结构体变量所存储地址的信息，并将该地址进行一定的处理，读出结构体的具体信息，包括成员参数列表(param)和该结构体的大小(size)。
+    //然后，通过计算当前访问成员之前所占用的空间，即(a = b.int - sizestruct)，找到该结构体成员在内存中的起始位置。
                               let aval = getSto store1 b.int
                               let list = structEnv.[aval.int]
                               let param =
@@ -834,6 +858,9 @@ and access acc locEnv gloEnv structEnv store : memoryData * store =
                                   match list with 
                                   | (string,paramdecs,i) -> i
                               let a =b.int - sizestruct;
+                            // 该代码使用了递归的方式，根据访问的成员的类型（类型包括访问单个变量与访问数组中的某个位置）
+                            // 和访问的成员在结构体中的位置（即已占用空间的大小）来确定所求变量在存储状态中的位置。
+                            // 在该过程中，需要针对访问单个变量或访问数组中某个位置进行不同的处理
                               let rec lookupidx list index = 
                                   match list with
                                   | [] -> failwith("can not find ")
@@ -846,11 +873,14 @@ and access acc locEnv gloEnv structEnv store : memoryData * store =
                                                                                                             match typ with
                                                                                                             | TypA(typ,Some i) -> i
                                                                                                             | TypA(typ,None) -> 0
+                                                                                                            | _ -> failwith ("AccStruct acc3 typ unknown primitive")
                                                                                                           let (i, store2) = eval idx locEnv gloEnv structEnv store1
                                                                                                           if(i.int>=size) then  failwith( " index out of size" )
                                                                                                           elif(i.int<0) then failwith( " index out of size" )
                                                                                                                         else (index + i.int)
                                                                                                        else lookupidx tail (index + (allsize typ))
+                                                                                        | _ -> failwith ("AccStruct acc2 acc3 unknown primitive")
+                                                            | _ -> failwith ("AccStruct acc2 unknown primitive")
                               (INT(a+(lookupidx param 0)),store1)
 
 and evals es locEnv gloEnv structEnv store : memoryData list * store =

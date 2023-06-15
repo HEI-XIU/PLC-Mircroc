@@ -43,22 +43,22 @@ and expr =                           // 表达式，右值
   | Prim2 of string * expr * expr    (* Binary primitive operator   *)//二元基本算子
   | Prim3 of expr * expr * expr      (* 三目运算符                   *)
  
-  | PlusAssign of access * expr       // x += a //语法塘
-  | MinusAssign of access * expr      // x -= a
-  | TimesAssign of access * expr      // x *=  a
-  | DivAssign of access * expr      // x /= a
-  | MODASSIGN of access * expr      // x %= a
+  | PlusAssign of access * expr      (* x += a                      *)
+  | MinusAssign of access * expr     (* x -= a                      *)
+  | TimesAssign of access * expr     (* x *=  a                     *)
+  | DivAssign of access * expr       (* x /= a                      *)
+  | MODASSIGN of access * expr       (* x %= a                      *)
 
-  | PrePlus of string * access      // ++x
-  | RearPlus of access * string       // x++
-  | PreMinus of string * access     // --x
-  | RearMinus of access * string    // x--
+  | PrePlus of string * access       (* ++x                         *)
+  | RearPlus of access * string      (* x++                         *)
+  | PreMinus of string * access      (* --x                         *)
+  | RearMinus of access * string     (* x--                         *)
 
-
-  | ModAssign of access * expr      // x %= a
+//???这个怎么重复定义了？
+  | ModAssign of access * expr      (* x %= a                       *)
   | Print of string * expr
-  | Typeof of expr
-  | Sizeof of expr 
+  | Typeof of expr                  (* 类型，但后期似乎没用到，不确定删不删*)
+  | Sizeof of expr                  (* 结构体获取大小使用             *)
 
 
   | Andalso of expr * expr           (* Sequential and              *)
@@ -79,15 +79,15 @@ and stmt =                           //语句
   | Return of expr option            (* Return from method          *)
   | Block of stmtordec list          (* Block: grouping and scope   *)
   | For of expr * expr * expr * stmt (* for循环                     *)
-  | Forin of access * expr * expr * stmt(* forin语法                 *)
+  | Forin of access * expr * expr * stmt(* forin语法                *)
   | DoWhile of stmt * expr           (* DoWhile循环                 *)
   | DoUntil of stmt * expr           (* DoUntil循环                 *)
   | Switch of expr * stmt list       (* Switch语法                  *)
-  | Case of expr * stmt
-  | Default of stmt
+  | Case of expr * stmt              (* Case功能语法                *)
+  | Default of stmt                  (* Default语法                 *)
   | Match of expr * stmt list        (* 模式匹配语法                 *)
-  | Pattern of expr * stmt
-  | MatchAll of stmt                 (*                             *)
+  | Pattern of expr * stmt           (* 模式匹配各个模式功能         *)
+  | MatchAll of stmt                 (* 模式匹配中的‘_’字符功能      *)
   | Break                            (*break功能                    *)
   | Continue                         (*continue功能                 *)
   // 语句块内部，可以是变量声明 或语句的列表                                                              
@@ -103,8 +103,8 @@ and stmtordec =
 and topdec = 
   | Fundec of typ option * string * (typ * string) list * stmt
   | Vardec of typ * string
-  | Structdec of string * (typ * string) list
-  | VariableDeclareAndAssign of typ * string * expr
+  | Structdec of string * (typ * string) list        (*struct结构体功能                 *)
+  | VariableDeclareAndAssign of typ * string * expr  (*未明确其功能                     *)
 
 // 程序是顶级声明的列表
 and program = 
