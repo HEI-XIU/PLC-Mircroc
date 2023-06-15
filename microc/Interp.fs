@@ -484,6 +484,7 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
               (choose body)
     | Pattern(e,body) -> exec body locEnv gloEnv store
     | MatchAll (body )-> exec body locEnv gloEnv store
+
 and stmtordec stmtordec locEnv gloEnv store =
     match stmtordec with
     | Stmt stmt -> (locEnv, exec stmt locEnv gloEnv store)
@@ -523,7 +524,7 @@ and eval e locEnv gloEnv store : memoryData * store =
     | CstS i -> (STRING(i), store)
     | CstC i -> (CHAR(i),store)
     | Addr acc -> access acc locEnv gloEnv store
-    | Prim1 (ope, e1) ->
+    | Prim1 (ope, e1) ->    //一元基本算子
         let (i1, store1) = eval e1 locEnv gloEnv store
 
         let res =
@@ -555,7 +556,7 @@ and eval e locEnv gloEnv store : memoryData * store =
 
     | Prim2 (ope, e1, e2) ->
 
-        let (i1, store1) = eval e1 locEnv gloEnv store
+        let (i1, store1) = eval e1 locEnv gloEnv store//计算表达式e1，第一个参数的store
         let (i2, store2) = eval e2 locEnv gloEnv store1
 
         let res =
@@ -641,6 +642,8 @@ and eval e locEnv gloEnv store : memoryData * store =
         else
             let (v3, store3) = eval e2 locEnv gloEnv store1
             (v3, store3)
+
+
 
     | Andalso (e1, e2) ->
         let (i1, store1) as res = eval e1 locEnv gloEnv store

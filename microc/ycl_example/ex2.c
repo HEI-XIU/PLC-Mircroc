@@ -1,5 +1,6 @@
+//三目运算
 void main() {
-    int i=3;
-    i > 5 ? i=0 : i=5;
-    printf("%d",i);
+  int x;
+  x = 10;
+  x == 5 ? print x : print (x * 2);
 }

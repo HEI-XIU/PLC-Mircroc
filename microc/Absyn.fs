@@ -41,7 +41,7 @@ and expr =                           // 表达式，右值
   | Prim1 of string * expr           (* Unary primitive operator    *)//一元基本算子
   | Prim2 of string * expr * expr    (* Binary primitive operator   *)//二元基本算子
   | Prim3 of expr * expr * expr      (* 三目运算符                   *)
-  | Prim4 of expr * access * expr    (* 复合赋值运算符                *)
+  | Prim4 of string * access * expr   (* 复合赋值运算符                *)
 
   | PlusAssign of access * expr       // x += a
   | MinusAssign of access * expr      // x -= a
@@ -51,11 +51,11 @@ and expr =                           // 表达式，右值
   | RearPlus of access * string       // x++
   | PreMinus of string * access     // --x
   | RearMinus of access * string    // x--
+
+
   | ModAssign of access * expr      // x %= a
   | Print of string * expr
 
-//ycl的三目运算符
-  | TernaryOperator of expr * expr * expr        //三目运算符 ? :
 
   | Andalso of expr * expr           (* Sequential and              *)
   | Orelse of expr * expr            (* Sequential or               *)
