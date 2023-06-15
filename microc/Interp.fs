@@ -524,7 +524,7 @@ and eval e locEnv gloEnv store : memoryData * store =
     | CstS i -> (STRING(i), store)
     | CstC i -> (CHAR(i),store)
     | Addr acc -> access acc locEnv gloEnv store
-    | Prim1 (ope, e1) ->//一元基本算子
+    | Prim1 (ope, e1) ->    //一元基本算子
         let (i1, store1) = eval e1 locEnv gloEnv store
 
         let res =
@@ -642,6 +642,8 @@ and eval e locEnv gloEnv store : memoryData * store =
         else
             let (v3, store3) = eval e2 locEnv gloEnv store1
             (v3, store3)
+
+
 
     | Andalso (e1, e2) ->
         let (i1, store1) as res = eval e1 locEnv gloEnv store

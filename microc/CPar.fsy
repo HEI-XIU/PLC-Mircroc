@@ -194,10 +194,11 @@ ExprNotAccess:
   | Access PLUSASSIGN Expr              { PlusAssign($1, $3)  }
   | Access MINUSASSIGN Expr             { MinusAssign($1, $3) }
   | Access TIMESASSIGN Expr             { TimesAssign($1, $3) }
-  | Access DOUBLEPLUS                   { RearPlus($1,"++")    }
+  | Access DOUBLEPLUS                   { RearPlus($1,"++")    }//自增自减
   | DOUBLEPLUS Access                   { PrePlus("++",$2)   }
   | Access DOUBLEMINUS                  { RearMinus($1,"--")    }
   | DOUBLEMINUS Access                  { PreMinus("--",$2)   }
+
   | Access DIVASSIGN Expr               { DivAssign($1, $3)   }
   | Access MODASSIGN Expr               { ModAssign($1, $3)   }
 
