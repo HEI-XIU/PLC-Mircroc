@@ -14,7 +14,7 @@ let compose1 f (g, s) = ((fun x -> g(f(x))), s)
 let nl = CstI 10 //  \n 的 ASCII 码
 %}
 
-//语法说明
+//语法说明//%token是词元说明符
 %token <int> CSTINT   // <int> 是词元的语义值类型
 %token <string> CSTSTRING NAME
 %token <bool> CSTBOOL
@@ -275,10 +275,12 @@ StmtPattern:
   | MATCHS AtExprNotAccess DEAL StmtM StmtPattern   { Pattern($2,$4) :: $5}
 ;
 
-Const:
-    CSTINT                              { $1       }
-  | MINUS CSTINT                        { - $2     }
-  | NULL                                { -1       }
+
+Const:  //常量
+    CSTINT                              { $1       }  //int类型常量
+  | CSTBOOL                             { if ($1) then 1 else 0 }  //将布尔类型转换为整型
+  | MINUS CSTINT                        { - $2     }  //负数常量
+  | NULL                                { -1       }  //null
 ;
 
 

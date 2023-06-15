@@ -38,9 +38,9 @@ let keyword s =
     | "default" -> DEFAULT   
     | "string"  -> STRING  
     | "float"   -> FLOAT  
-    | "bool"    -> BOOL
-    | "false"   -> CSTBOOL false 
-    | "true"    -> CSTBOOL true  
+    | "bool"    -> BOOL     //bollean
+    | "false"   -> CSTBOOL false
+    | "true"    -> CSTBOOL true
     | "printf"  -> PRINTF 
 
     | "Int"     -> TOINT
