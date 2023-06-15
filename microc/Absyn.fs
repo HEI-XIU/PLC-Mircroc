@@ -19,6 +19,7 @@ type typ =
   | TypA of typ * int option         (* Array type                  *)
   | TypP of typ                      (* Pointer type                *)
   | TypeStruct of string             (* Struct type                *)
+  | Lambda of  typ option * string * (typ * string) list * stmt
   
                                                                 
 and expr =                           // 表达式，右值   
@@ -53,6 +54,8 @@ and expr =                           // 表达式，右值
   | RearMinus of access * string    // x--
   | ModAssign of access * expr      // x %= a
   | Print of string * expr
+  | Typeof of expr
+  | Sizeof of expr 
 
 //ycl的三目运算符
   | TernaryOperator of expr * expr * expr        //三目运算符 ? :
@@ -75,6 +78,7 @@ and stmt =                           //语句
   | Return of expr option            (* Return from method          *)
   | Block of stmtordec list          (* Block: grouping and scope   *)
   | For of expr * expr * expr * stmt (* for循环                     *)
+  | Forin of access * expr * expr * stmt(* forin语法                 *)
   | DoWhile of stmt * expr           (* DoWhile循环                 *)
   | DoUntil of stmt * expr           (* DoUntil循环                 *)
   | Switch of expr * stmt list       (* Switch语法                  *)
@@ -98,6 +102,8 @@ and stmtordec =
 and topdec = 
   | Fundec of typ option * string * (typ * string) list * stmt
   | Vardec of typ * string
+  | Structdec of string * (typ * string) list
+  | VariableDeclareAndAssign of typ * string * expr
 
 // 程序是顶级声明的列表
 and program = 

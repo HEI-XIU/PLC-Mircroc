@@ -261,8 +261,8 @@ L3:
 	pop rax
 	mov rax,[rax]
 	push rax
-	;CSTI 3
-	push 3
+	;CSTI 5
+	push 5
 	;LT
 	pop rax
 	pop r10

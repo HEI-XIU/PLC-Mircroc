@@ -5,7 +5,9 @@
 	No (real) shift/reduce conflicts thanks to Niels Kokholm.
 *)
 open Absyn
-
+let first  (a, _, _) = a
+let second (_, b, _) = b
+let third  (_, _, c) = c
 // Vardesc 返回的是一个 元组 (g,s)
 // g是类型构造函数，s是变量名
 // compose1 函数 取出 类型构造子 g，用类型复合机制构造类型。
@@ -21,15 +23,16 @@ let nl = CstI 10 //  \n 的 ASCII 码
 %token <float> CSTFLOAT
 %token <char> CSTCHAR
 
-%token CHAR ELSE IF INT NULL PRINT PRINTLN RETURN VOID WHILE FOR DOWHILE DO UNTIL DOUNTIL SWITCH CASE MATCH WITH DEFAULT QUE ALL STRING FLOAT BOOL PRINTF BREAK CONTINUE 
+%token CHAR ELSE IF INT NULL PRINT PRINTLN RETURN VOID WHILE FOR DOWHILE DO UNTIL DOUNTIL SWITCH CASE MATCH WITH DEFAULT QUE ALL STRING FLOAT BOOL PRINTF BREAK CONTINUE IN STRUCT
 
-%token PLUS MINUS TIMES DIV MOD DOUBLEPLUS DOUBLEMINUS PLUSASSIGN MINUSASSIGN TIMESASSIGN DIVASSIGN MODASSIGN TOCHAR TOINT TOFLOAT TOSTRING POINT
+%token PLUS MINUS TIMES DIV MOD DOUBLEPLUS DOUBLEMINUS PLUSASSIGN MINUSASSIGN TIMESASSIGN DIVASSIGN MODASSIGN TOCHAR TOINT TOFLOAT TOSTRING POINT SIZEOF TYPEOF
 %token EQ NE GT LT GE LE
 %token NOT SEQOR SEQAND 
 %token LPAR RPAR LBRACE RBRACE LBRACK RBRACK SEMI COMMA ASSIGN AMP COLON DEAL MATCHS BITNOT BITLEFT BITRIGHT BITXOR BITOR
 %token EOF
 
 %right ASSIGN             /* lowest precedence */  // 最下面的优先级最高
+%left POINT
 %nonassoc PRINT
 %right QUE COLON
 %left SEQOR
@@ -66,6 +69,8 @@ Topdecs:
 Topdec: 
     Vardec SEMI                         { Vardec (fst $1, snd $1) }
   | Fundec                              { $1 }
+  | VariableDeclareAndAssign SEMI       { VariableDeclareAndAssign(first $1, second $1 , third $1)  }
+  | StructDec SEMI                      { Structdec(fst $1,snd $1) }
 ;
 
 /*                                               
@@ -96,6 +101,20 @@ VardecAndAssign:
  变量描述
 NAME  "n"   (fun t->t, "n") 返回一个元组，第一个元素，是类型构造函数，在Vardec 规则中使用
 */ 
+
+//结构体
+StructDec:
+  | STRUCT NAME LBRACE MemberList RBRACE         { ($2, $4) }
+;
+
+MemberList:
+    /* empty */ { [] }
+    | Vardec SEMI MemberList { $1 :: $3 }
+;
+
+VariableDeclareAndAssign:
+    Type  Vardesc ASSIGN Expr    { ((fst $2) $1, snd $2 , $4) }
+;
 
 // 变量描述
 Vardesc:                         
@@ -160,10 +179,12 @@ StmtM:  /* No unbalanced if-else */
   | IF LPAR Expr RPAR StmtM ELSE StmtM  { If($3, $5, $7)       }
   | WHILE LPAR Expr RPAR StmtM          { While($3, $5)        }
   | DO StmtM WHILE LPAR Expr RPAR SEMI  { DoWhile($2,$5)       }
-  | DO StmtM UNTIL LPAR Expr RPAR SEMI  { DoUntil($2, $5) }
-  | FOR LPAR Expr SEMI Expr SEMI Expr RPAR StmtM     { For($3,$5,$7,$9)  }
-  | SWITCH LPAR Expr RPAR LBRACE StmtCase RBRACE        { Switch($3,$6)  }
-  | MATCH Expr WITH StmtPattern         { Match($2,$4)      } 
+  | DO StmtM UNTIL LPAR Expr RPAR SEMI  { DoUntil($2, $5)      }
+  | FOR LPAR Expr SEMI Expr SEMI Expr RPAR StmtM     { For($3,$5,$7,$9)   }
+  | FOR Access IN LPAR Expr COMMA Expr RPAR StmtM    { Forin($2,$5,$7,$9) }
+  | SWITCH LPAR Expr RPAR LBRACE StmtCase RBRACE     { Switch($3,$6)      }
+
+  | MATCH Expr WITH StmtPattern         { Match($2,$4)         } 
   | BREAK SEMI                          { Break }  //break
   | CONTINUE SEMI                       { Continue }
 ;
@@ -192,15 +213,17 @@ ExprNotAccess:
   | Access PLUSASSIGN Expr              { PlusAssign($1, $3)  }
   | Access MINUSASSIGN Expr             { MinusAssign($1, $3) }
   | Access TIMESASSIGN Expr             { TimesAssign($1, $3) }
-  | Access DOUBLEPLUS                   { RearPlus($1,"++")    }
-  | DOUBLEPLUS Access                   { PrePlus("++",$2)   }
-  | Access DOUBLEMINUS                  { RearMinus($1,"--")    }
+  | Access DOUBLEPLUS                   { RearPlus($1,"++")   }
+  | DOUBLEPLUS Access                   { PrePlus("++",$2)    }
+  | Access DOUBLEMINUS                  { RearMinus($1,"--")  }
   | DOUBLEMINUS Access                  { PreMinus("--",$2)   }
   | Access DIVASSIGN Expr               { DivAssign($1, $3)   }
   | Access MODASSIGN Expr               { ModAssign($1, $3)   }
 
   | PRINTF LPAR CSTSTRING COMMA Expr RPAR{ Print($3 , $5)     }
 
+  | TYPEOF LPAR Expr RPAR               { Typeof($3)          }
+  | SIZEOF LPAR Expr RPAR               { Sizeof($3)          }
 
   | NOT Expr                            { Prim1("!", $2)      }
   | PRINT Expr                          { Prim1("printi", $2) }
@@ -301,4 +324,5 @@ Type:
   | STRING                              { TypS     }
   | BOOL                                { TypB     } 
   | FLOAT                               { TypF     }
+  | STRUCT NAME                         { TypeStruct($2) }
 ;
