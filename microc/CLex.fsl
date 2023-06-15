@@ -109,11 +109,6 @@ rule Token = parse          // 每个 规则rule 会生成为一个函数，函�
   | "!="            { NE }
   | '>'             { GT }
   | '<'             { LT }
-  | "~"             { BITNOT }
-  | "<<"            { BITLEFT }
-  | ">>"            { BITRIGHT }
-  | "^"             { BITXOR }  
-  | "|"             { BITOR }
   | ">="            { GE }
   | "<="            { LE }
   | "_"             { ALL }
