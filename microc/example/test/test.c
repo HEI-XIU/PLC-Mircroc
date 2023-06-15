@@ -23,11 +23,12 @@ void main(int n) {
 
     // printf("%d",(Int)12.5 );
     
-
-    char i = 1;
-    printf("%d",(Int) '9' );
-    printf("%c",(Char)1 );
-    printf("%s",(String)12 );
+  int i = 0;
+  print i;
+    // char i = 1;
+    // printf("%d",(Int) '9' );
+    // printf("%c",(Char)1 );
+    // printf("%s",(String)12 );
 
     // printf("%f",(Float)13);
 

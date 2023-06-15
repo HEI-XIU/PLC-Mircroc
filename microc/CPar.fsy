@@ -32,6 +32,8 @@ let nl = CstI 10 //  \n 的 ASCII 码
 %token LPAR RPAR LBRACE RBRACE LBRACK RBRACK SEMI COMMA ASSIGN AMP COLON DEAL MATCHS
       //(     )   {       }     [       ]     ;     ,     =     *   :     ->    |
 %token EOF
+%token TRY CATCH THROW
+
 
 %right ASSIGN                         /* lowest precedence */  // 最下面的优先级最高
 %nonassoc PRINT                       //打印
@@ -184,12 +186,23 @@ StmtM:  /* No unbalanced if-else */
   | MATCH Expr WITH StmtPattern         { Match($2,$4)         } 
   | BREAK SEMI                          { Break }  //break
   | CONTINUE SEMI                       { Continue }
+  | TRY StmtM CatchStmt { Try($2, $3) }
 ;
 
 StmtU:
     IF LPAR Expr RPAR StmtM ELSE StmtU  { If($3, $5, $7)       }
   | IF LPAR Expr RPAR Stmt              { If($3, $5, Block []) }
   | WHILE LPAR Expr RPAR StmtU          { While($3, $5)        }
+;
+
+CatchStmt:
+    CATCH LPAR EXCEPTION RPAR StmtM                { [Catch($3,$5)]     }
+  | CATCH LPAR EXCEPTION RPAR StmtM CatchStmt      { Catch($3,$5) :: $6 }
+;
+
+
+EXCEPTION:
+  CSTSTRING                                        { Exception $1 }
 ;
 
 Expr: 

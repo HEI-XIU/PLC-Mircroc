@@ -1,8 +1,9 @@
 void main(int n) {
 
     char a;
-    a = 'c';
-    printf("%c",a);
-    printf("%d",n);
+    a = '2';
+    print a;
+    // printf("%c",a);
+    // printf("%d",n);
 
 }

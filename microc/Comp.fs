@@ -202,7 +202,6 @@ and allocate (kind: int -> Var) (typ, x) (varEnv: VarEnv) (structEnv : StructTyp
         let newEnv = ((x, (kind (newloc+128), typ)) :: env, newloc+128+1)
         let code = [INCSP 128; GETSP; CSTI (128-1); SUB]
         (newEnv, code)
-
     | TypeStruct structName ->
         let (name, argslist, size) = structLookup structEnv structName
         let code = [INCSP (size + 1); GETSP; CSTI (size); SUB]
@@ -389,8 +388,59 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) (structEnv : StructTypeEnv)
         let lablist   = dellab lablist
         let labbegin = headlab lablist
         [GOTO labbegin]
+    | Try(stmt,catchs)  ->
+        let exns = [Exception "ArithmeticalExcption"]
+        let rec lookupExn e1 (es:excep list) exdepth=
+            match es with
+            | hd :: tail -> if e1 = hd then exdepth else lookupExn e1 tail exdepth+1
+            | []-> -1
+        // let (labend, C1) = addLabel C
+        let labend = newLabel ()
+        // let lablist = labend :: lablist
+        // lablist <- [ labend ] @ lablist
+        let (env, fdepth) = varEnv
+        let varEnv = (env, fdepth+3*catchs.Length)
+        let (tryinstr,varEnv) = tryStmt stmt varEnv funEnv structEnv
+        let rec everycatch c  = 
+            match c with
+            | [Catch(exn, body)] -> 
+                let exnum = lookupExn exn exns 1
+                let catchcode = cStmt body varEnv funEnv structEnv
+                let labcatch = 
+                    // addLabel( cStmt body varEnv funEnv lablist structEnv [])
+                    newLabel()
+                // let lablist = label :: lablist
 
+                let trycode = PUSHHDLR (exnum, labcatch) :: tryinstr @ [POPHDLR; Label labcatch]
+                (catchcode, trycode)
+            | Catch(exn,body) :: tr->
+                let exnum = lookupExn exn exns 1
+                let (C2, C3) = everycatch tr
+                // let (label, Ccatch) = addLabel( cStmt body varEnv funEnv lablist structEnv C2)
+                let catchcode = C2 @ cStmt body varEnv funEnv structEnv
+                let labcatch = newLabel()
+                // let trycode = PUSHHDLR (exnum, labcatch) :: C3 @ [POPHDLR]
+                let trycode = PUSHHDLR (exnum, labcatch) :: C3 @ [POPHDLR; Label labcatch]
+                (catchcode, trycode @ [Label labcatch])
+            | [] -> ([], tryinstr)
+        let (catchcode, trycode) = everycatch catchs
+        trycode @ catchcode @ [Label labend]
 
+and tryStmt tryBlock (varEnv : VarEnv) (funEnv : FunEnv) (structEnv : StructTypeEnv) : instr list * VarEnv = 
+    match tryBlock with
+    | Block stmts ->
+
+        let rec loop stmts varEnv =
+            match stmts with
+            | [] -> (snd varEnv, [], varEnv)
+            | s1 :: sr ->
+                let (varEnv1, code1) = cStmtOrDec s1 varEnv funEnv structEnv
+                let (fdepthr, coder, varEnv2) = loop sr varEnv1
+                (fdepthr, code1 @ coder, varEnv2)
+
+        let (fdepthend, code, varEnv1) = loop stmts varEnv
+
+        code @ [ INCSP(snd varEnv - fdepthend) ], varEnv1
 //语句 或 声明
 and cStmtOrDec stmtOrDec (varEnv: VarEnv) (funEnv: FunEnv) (structEnv : StructTypeEnv) : VarEnv * instr list =
     match stmtOrDec with
@@ -428,13 +478,12 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) (structEnv : StructTypeEnv
         let bytes = System.BitConverter.GetBytes(float32(f))
         let v = System.BitConverter.ToInt32(bytes, 0)
         [ CSTI v ]
-    //测试解释器
     | Print(s,e)     ->  
       cExpr e varEnv funEnv structEnv
       @ (match s with
          | "%d"      -> [PRINTI]
          | "%c"      -> [PRINTC]
-        //  | "%f"      -> [PRINTF]
+        //  | "%f"      -> [printf]
          | _        -> raise (Failure "unknown primitive 1"))
     | Addr acc -> cAccess acc varEnv funEnv structEnv
     | Prim1 (ope, e1) -> //一元表达式
@@ -443,6 +492,7 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) (structEnv : StructTypeEnv
            | "!" -> [ NOT ]
            | "printi" -> [ PRINTI ]
            | "printc" -> [ PRINTC ]
+        //    | "printf" -> [ PRINTC ]
         //    | "~" -> [ BITNOT ]
            | _ -> raise (Failure "unknown primitive 1"))
     | Prim2 (ope, e1, e2) -> //二元表达式

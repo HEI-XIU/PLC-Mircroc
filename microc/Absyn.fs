@@ -90,8 +90,14 @@ and stmt =                           //语句
   | MatchAll of stmt                 (* 模式匹配中的‘_’字符功能      *)
   | Break                            (*break功能                    *)
   | Continue                         (*continue功能                 *)
+  | Throw of excep
+  | Try of stmt * stmt list
+  | Catch of excep * stmt
   // 语句块内部，可以是变量声明 或语句的列表                                                              
 
+//异常抛出
+and excep = 
+  | Exception of string
 //语句或声明
 and stmtordec =                                                    
   | Dec of typ * string              (* Local variable declaration  *)

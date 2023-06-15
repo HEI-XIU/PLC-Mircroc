@@ -259,6 +259,13 @@ and cExpr (e : expr) (varEnv : VarEnv) (funEnv : FunEnv) (C : instr list) : inst
     | Access acc     -> cAccess acc varEnv funEnv (LDI :: C)
     | Assign(acc, e) -> cAccess acc varEnv funEnv (cExpr e varEnv funEnv (STI :: C))
     | CstI i         -> addCST i C
+    | CstC c -> 
+        let c = (int c)
+        addCST c C
+    | CstF f      -> 
+        let bytes = System.BitConverter.GetBytes(float32(f))
+        let v = System.BitConverter.ToInt32(bytes, 0)
+        addCST v C
     | Addr acc       -> cAccess acc varEnv funEnv C
     | Prim1(ope, e1) ->
       cExpr e1 varEnv funEnv
