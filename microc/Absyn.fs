@@ -19,7 +19,7 @@ type typ =
   | TypA of typ * int option         (* Array type                  *)
   | TypP of typ                      (* Pointer type                *)
   | TypeStruct of string             (* Struct type                *)
-  | Lambda of  typ option * string * (typ * string) list * stmt
+  | Lambda of  typ option * string * (typ * string) list * stmt (* 函数返回 *)
   
                                                                 
 and expr =                           // 表达式，右值   

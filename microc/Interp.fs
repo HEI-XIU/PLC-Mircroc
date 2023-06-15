@@ -417,7 +417,12 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (structEnv:structEnv) (store
 
         loop stmts (locEnv, store)
 
-    | Return _ -> failwith "return not implemented" // 解释器没有实现 return
+    // | Return _ -> failwith "return not implemented" // 解释器没有实现 return
+    | Return e ->  match e with
+                  | Some e1 -> let (res ,store0) = eval e1 locEnv gloEnv structEnv store;
+                               let st = store0.Add(-1, res);
+                               (st)                     
+                  | None -> store
     | For(assignedStmt,cmpStmt,updateStmt,body) -> 
         let (resAssigned ,storeAssigned) = eval assignedStmt locEnv gloEnv structEnv store
         // 对 assignedStmt 进行求值,通过let关键字将求值结果中的语句部分赋值给resAssigned变量，将新的存储状态赋值给storeAssigned变量，从而分别存储这两个值。
@@ -903,8 +908,12 @@ and callfun f es locEnv gloEnv structEnv store : memoryData * store =
     let (fBodyEnv, store2) =
         bindVars (List.map snd paramdecs) vs (varEnv, nextloc) store1
 
-    let store3 = exec fBody fBodyEnv gloEnv [] store2
-    (INT(-111), store3)
+    let store3 = exec fBody fBodyEnv gloEnv structEnv store2
+    let res = store3.TryFind(-1) 
+    let restore = store3.Remove(-1)
+    match res with
+    | None -> (INT(0),restore)
+    | Some i -> (i,restore)
 
 
 
