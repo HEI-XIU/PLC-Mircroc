@@ -128,7 +128,7 @@
 | += 等语法糖         |          |      |      |      |
 | 自增自减（++/--)    |  5        |    1  |      |      |
 | 结构体              |          |      |      |      |
-| switch case default |          |      |      |      |
+| switch case default |     5     |   1   |      |      |
 | 变量名称检查        |          |      |      |      |
 | trycatch            |          |      |      |      |
 | 修改Java虚拟机      |          |      |      |      |

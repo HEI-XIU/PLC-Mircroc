@@ -635,7 +635,7 @@ and eval e locEnv gloEnv store : memoryData * store =
 
         (res, store2)
 
-    | Prim3 (cond, e1, e2) ->
+    | Prim3 (cond, e1, e2) ->       //三目运算符
         let (v1, store1) = eval cond locEnv gloEnv store
 
         if v1.bool then
