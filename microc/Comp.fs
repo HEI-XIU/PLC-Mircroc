@@ -239,6 +239,30 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
                   @ [ Label labtest ]//test标签
                     @ cExpr e2 varEnv funEnv//编译条件表达式e2 
                       @ [IFNZRO labbegin]//如果e2不为0，就跳转到begin标签进行循环
+    | Switch (e, stmt1) -> //switch语句
+        
+        //定义辅助函数cases
+        let rec cases stmt1 =
+            match stmt1 with
+            | Case(e2, stmt2) :: stmts -> //匹配到case语句
+                // 标签要在Case里面，因为每条case的标签是不一样的
+                let labend = newLabel () //生成end标签
+                let labnext = newLabel () //生成next标签
+
+                [ DUP ]//复制一个栈顶
+                @ cExpr e2 varEnv funEnv//编译case常量表达式
+                  @ [ EQ ]//判断switch表达式和case常量表达式是否相等
+                    @ [ IFZERO labend ]//不相等，就跳转到end标签
+                      @ cStmt stmt2 varEnv funEnv //相等，就编译case中的语句
+                        @ [ GOTO labnext; Label labend ]//跳转到最后的next标签；end标签
+                          @ cases stmts//编译剩下的case语句
+                            @ [ Label labnext ]//next标签
+
+            | _ -> [] //未匹配任何case
+
+        cExpr e varEnv funEnv//编译switch表达式
+        @ cases stmt1//编译case语句
+          @ [ INCSP -1 ]//释放空间（因为复制一个栈顶元素）
 
 
 //语句 或 声明

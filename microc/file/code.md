@@ -5,7 +5,7 @@ dotnet restore interpc.fsproj #可选
 dotnet clean interpc.fsproj #可选
 dotnet build interpc.fsproj #构建.
 #/bin/Debug/net6.0/interpc.exe，并查看详细生成过程
-./bin/Debug/net6.0/interpc.exe ycl_example/preinc.c #查看运行结果
+./bin/Debug/net6.0/interpc.exe ycl_example/ex6.c #查看运行结果
 dotnet "C:\Users\Cc\.nuget\packages\fslexyacc\10.2.0\build\/fslex/netcoreapp3.1\fslex.dll" -o "CLex.fs" --module CLex --unicode CLex.fsl #生成扫描器
 "C:\Users\Cc\.nuget\packages\fslexyacc\10.2.0\build\/fsyacc/netcoreapp3.1\fsyacc.dll" -o "CPar.fs" --module CPar CPar.fsy #生成分析器
 dotnet fsi #进入命令行

@@ -467,6 +467,8 @@ let rec exec stmt (locEnv: locEnv) (gloEnv: gloEnv) (store: store) : store =
               (choose body)
               //对choose函数的调用，并以body参数作为输入
     | Case(e,body) -> exec body locEnv gloEnv store
+    | Default(body) -> exec body locEnv gloEnv store
+    
     | Match(e,body) ->  
     //与switch类似
               let (res, store1) = eval e locEnv gloEnv store

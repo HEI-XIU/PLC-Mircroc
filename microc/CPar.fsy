@@ -165,7 +165,7 @@ StmtM:  /* No unbalanced if-else */
   | WHILE LPAR Expr RPAR StmtM          { While($3, $5)        }
   | DO StmtM WHILE LPAR Expr RPAR SEMI  { DoWhile($2,$5)       }
   | DO StmtM UNTIL LPAR Expr RPAR SEMI  { DoUntil($2, $5) }
-  | FOR LPAR Expr SEMI Expr SEMI Expr RPAR StmtM     { For($3,$5,$7,$9)  }
+  | FOR LPAR Expr SEMI Expr SEMI Expr RPAR StmtM     { For($3,$5,$7,$9)  }  //FOR循环
   | SWITCH LPAR Expr RPAR LBRACE StmtCase RBRACE        { Switch($3,$6)  }
   | MATCH Expr WITH StmtPattern         { Match($2,$4)      } 
 ;
@@ -268,6 +268,14 @@ StmtCase:
   | DEFAULT COLON StmtM                            { [Default($3)] }
   | CASE AtExprNotAccess COLON StmtM StmtCase      { Case($2,$4) :: $5}
 ;
+// CaseList:
+//                                         { []                   }
+//   | CaseDec                             { [$1]                 }
+//   | CaseDec CaseList                    { $1 :: $2             }
+//   | DEFAULT COLON StmtM                 { [Default($3)]        }
+
+// CaseDec:
+//     CASE Expr COLON Stmt                { Case($2,$4)          }
 
 StmtPattern:
     MATCHS AtExprNotAccess DEAL StmtM               { [Pattern($2,$4)]    }  
