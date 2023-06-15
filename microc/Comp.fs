@@ -108,10 +108,29 @@ let rec lookup env x =
     | (y, v) :: yr -> if x = y then v else lookup yr x
 
 (* A global variable has an absolute address, a local one has an offset: *)
+//在环境env上查找名称为x的结构体
+let rec structLookup env x =
+    match env with
+    | []                            -> failwith(x + " not found")
+    | (name, arglist, size)::rhs    -> if x = name then (name, arglist, size) else structLookup rhs x
+
 
 type Var =
     | Glovar of int (* absolute address in stack           *)
     | Locvar of int (* address relative to bottom of frame *)
+    | StructMemberLoc of int
+
+let rec structLookupVar env x lastloc =
+    match env with
+    | []                            -> failwith(x + " not found")
+    | (name, (loc, typ))::rhs         -> 
+        if x = name then 
+            match typ with
+            | TypA (_, _)  -> StructMemberLoc (lastloc+1)
+            | _                 -> loc 
+        else
+        match loc with
+        | StructMemberLoc lastloc1 -> structLookupVar rhs x lastloc1
 
 (* The variable environment keeps track of global and local variables, and
    keeps track of next available offset for local variables
@@ -138,14 +157,16 @@ type VarEnv = (Var * typ) Env * int
 
 type Paramdecs = (typ * string) list
 
+type StructTypeEnv = (string * (Var * typ) Env * int) list
+
 type FunEnv = (label * typ option * Paramdecs) Env
 
 let isX86Instr = ref false
 
 (* Bind declared variable in env and generate code to allocate it: *)
 // kind : Glovar / Locvar
-let rec allocateWithMsg (kind: int -> Var) (typ, x) (varEnv: VarEnv) =
-    let varEnv, instrs = allocate (kind: int -> Var) (typ, x) (varEnv: VarEnv)
+let rec allocateWithMsg (kind: int -> Var) (typ, x) (varEnv: VarEnv) (structEnv : StructTypeEnv) =
+    let varEnv, instrs = allocate (kind: int -> Var) (typ, x) (varEnv: VarEnv) (structEnv : StructTypeEnv)
 
     msg
     <| "\nalloc\n"
@@ -154,17 +175,17 @@ let rec allocateWithMsg (kind: int -> Var) (typ, x) (varEnv: VarEnv) =
 
     (varEnv, instrs)
 
-and allocate (kind: int -> Var) (typ, x) (varEnv: VarEnv) : VarEnv * instr list =
+and allocate (kind: int -> Var) (typ, x) (varEnv: VarEnv) (structEnv : StructTypeEnv) : VarEnv * instr list =
 
     msg $"allocate called!{(x, typ)}"
-    let defaultValue typ =
-        match typ with
-        | TypI -> INT(0)
-        | TypC -> CHAR(' ')
-        | TypB -> BOOL(false)
-        | TypF -> FLOAT(0.0)
-        | TypP i -> POINTER(-1)
-        | TypS -> STRING("")
+    // let defaultValue typ =
+    //     match typ with
+    //     | TypI -> INT(0)
+    //     | TypC -> CHAR(' ')
+    //     | TypB -> BOOL(false)
+    //     | TypF -> FLOAT(0.0)
+    //     | TypP i -> POINTER(-1)
+    //     | TypS -> STRING("")
 
     // newloc 下个空闲存储位置
     let (env, newloc) = varEnv
@@ -177,6 +198,16 @@ and allocate (kind: int -> Var) (typ, x) (varEnv: VarEnv) : VarEnv * instr list 
         let code = [ INCSP i; GETSP; OFFSET(i - 1); SUB ]
         // info (fun () -> printf "new varEnv: %A\n" newEnv)
         (newEnv, code)
+    | TypS ->
+        let newEnv = ((x, (kind (newloc+128), typ)) :: env, newloc+128+1)
+        let code = [INCSP 128; GETSP; CSTI (128-1); SUB]
+        (newEnv, code)
+
+    | TypeStruct structName ->
+        let (name, argslist, size) = structLookup structEnv structName
+        let code = [INCSP (size + 1); GETSP; CSTI (size); SUB]
+        let newEnvr = ((x, (kind (newloc + size + 1), typ)) :: env, newloc+size+1+1)
+        (newEnvr, code)
     | _ ->
         let newEnv = ((x, (kind (newloc), typ)) :: env, newloc + 1)
 
@@ -197,23 +228,23 @@ let bindParams paras ((env, newloc): VarEnv) : VarEnv = List.fold bindParam (env
 
 (* Build environments for global variables and functions *)
 
-let makeGlobalEnvs (topdecs: topdec list) : VarEnv * FunEnv * instr list =
-    let rec addv decs varEnv funEnv =
+// let makeGlobalEnvs (topdecs: topdec list) : VarEnv * FunEnv * instr list =
+//     let rec addv decs varEnv funEnv =
 
-        msg $"\nGlobal varEnv:\n{varEnv}\n"
-        msg $"\nGlobal funEnv:\n{funEnv}\n"
+//         msg $"\nGlobal varEnv:\n{varEnv}\n"
+//         msg $"\nGlobal funEnv:\n{funEnv}\n"
 
-        match decs with
-        | [] -> (varEnv, funEnv, [])
-        | dec :: decr ->
-            match dec with
-            | Vardec (typ, var) ->
-                let (varEnv1, code1) = allocateWithMsg Glovar (typ, var) varEnv
-                let (varEnvr, funEnvr, coder) = addv decr varEnv1 funEnv
-                (varEnvr, funEnvr, code1 @ coder)
-            | Fundec (tyOpt, f, xs, body) -> addv decr varEnv ((f, ($"{newLabel ()}_{f}", tyOpt, xs)) :: funEnv)
+//         match decs with
+//         | [] -> (varEnv, funEnv, [])
+//         | dec :: decr ->
+//             match dec with
+//             | Vardec (typ, var) ->
+//                 let (varEnv1, code1) = allocateWithMsg Glovar (typ, var) varEnv
+//                 let (varEnvr, funEnvr, coder) = addv decr varEnv1 funEnv
+//                 (varEnvr, funEnvr, code1 @ coder)
+//             | Fundec (tyOpt, f, xs, body) -> addv decr varEnv ((f, ($"{newLabel ()}_{f}", tyOpt, xs)) :: funEnv)
 
-    addv topdecs ([], 0) []
+//     addv topdecs ([], 0) []
 
 
 (*
@@ -242,18 +273,18 @@ let rec dellab labs =
     match labs with
         | lab :: tr ->   tr
         | []        ->   []
-let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
+let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) (structEnv : StructTypeEnv) : instr list =
     match stmt with
     | If (e, stmt1, stmt2) ->
         let labelse = newLabel () //生成else语句的标签
         let labend = newLabel () //生成end语句的标签
 
-        cExpr e varEnv funEnv //编译表达式e
+        cExpr e varEnv funEnv structEnv //编译表达式e
         @ [ IFZERO labelse ] //如果表达式e等于0，跳到else标签
-          @ cStmt stmt1 varEnv funEnv //编译语句stmt1
+          @ cStmt stmt1 varEnv funEnv structEnv //编译语句stmt1
             @ [ GOTO labend ] //跳转到end标签
               @ [ Label labelse ] //else标签开始的地方
-                @ cStmt stmt2 varEnv funEnv @ [ Label labend ] //编译语句stmt2，并连上end标签，编译结束
+                @ cStmt stmt2 varEnv funEnv structEnv @ [ Label labend ] //编译语句stmt2，并连上end标签，编译结束
     | While (e, body) ->
         let labbegin = newLabel ()
         let labtest = newLabel ()
@@ -262,18 +293,18 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
         lablist <- [labend; labtest; labbegin]
 
         [ GOTO labtest; Label labbegin ]
-        @ cStmt body varEnv funEnv
+        @ cStmt body varEnv funEnv structEnv
           @ [ Label labtest ]
             // @ cExpr e varEnv funEnv @ [ IFNZRO labbegin ]
-            @ cExpr e varEnv funEnv @ [ IFNZRO labbegin; Label labend ]
-    | Expr e -> cExpr e varEnv funEnv @ [ INCSP -1 ]
+            @ cExpr e varEnv funEnv structEnv@ [ IFNZRO labbegin; Label labend ]
+    | Expr e -> cExpr e varEnv funEnv structEnv@ [ INCSP -1 ]
     | Block stmts ->
 
         let rec loop stmts varEnv =
             match stmts with
             | [] -> (snd varEnv, [])
             | s1 :: sr ->
-                let (varEnv1, code1) = cStmtOrDec s1 varEnv funEnv
+                let (varEnv1, code1) = cStmtOrDec s1 varEnv funEnv structEnv
                 let (fdepthr, coder) = loop sr varEnv1
                 (fdepthr, code1 @ coder)
 
@@ -282,7 +313,7 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
         code @ [ INCSP(snd varEnv - fdepthend) ]
 
     | Return None -> [ RET(snd varEnv - 1) ]
-    | Return (Some e) -> cExpr e varEnv funEnv @ [ RET(snd varEnv) ]
+    | Return (Some e) -> cExpr e varEnv funEnv structEnv @ [ RET(snd varEnv) ]
 
     |DoWhile (stmt1, e) -> //dowhile循环
         let labbegin = newLabel () //生成begin标签
@@ -290,12 +321,12 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
 
         let labend = newLabel ()
         lablist <- [labend; labtest; labbegin]
-        cStmt stmt1 varEnv funEnv //先编译语句stmt
+        cStmt stmt1 varEnv funEnv structEnv//先编译语句stmt
         @ [ GOTO labtest; Label labbegin ] //跳转到test标签；begin标签开始的地方
-        @ cStmt stmt1 varEnv funEnv //编译语句stmt
+        @ cStmt stmt1 varEnv funEnv structEnv//编译语句stmt
           @ [ Label labtest ] //test标签
             // @ cExpr e varEnv funEnv @ [ IFNZRO labbegin ] //编译表达式e；如果不等于0跳转到begin，实现循环
-            @ cExpr e varEnv funEnv @ [ IFNZRO labbegin; Label labend ]
+            @ cExpr e varEnv funEnv structEnv @ [ IFNZRO labbegin; Label labend ]
 
     | DoUntil (stmt1, e) -> //dountil循环
         let labbegin = newLabel () //生成begin标签
@@ -303,26 +334,26 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
 
         let labend = newLabel ()
         lablist <- [labend; labtest; labbegin]
-        cStmt stmt1 varEnv funEnv //先编译语句stmt
+        cStmt stmt1 varEnv funEnv structEnv//先编译语句stmt
         @ [ GOTO labtest; Label labbegin ] //跳转到test标签；begin标签开始的地方
-        @ cStmt stmt1 varEnv funEnv //编译语句stmt
+        @ cStmt stmt1 varEnv funEnv structEnv//编译语句stmt
           @ [ Label labtest ] //test标签
             // @ cExpr e varEnv funEnv @ [ IFZERO labbegin ] //编译表达式e；如果等于0跳转到begin，实现循环
-            @ cExpr e varEnv funEnv @ [ IFNZRO labbegin; Label labend ]
+            @ cExpr e varEnv funEnv structEnv @ [ IFNZRO labbegin; Label labend ]
             
     | For (e1, e2, e3, body) -> //for循环
         let labbegin = newLabel () //生成begin标签
         let labtest = newLabel () //生成test标签
 
         // 把for循环转换为while循环进行理解
-        cExpr e1 varEnv funEnv//先编译初始化表达式e1
+        cExpr e1 varEnv funEnv structEnv//先编译初始化表达式e1
         @ [ INCSP -1 ]//释放空间
           @ [ GOTO labtest; Label labbegin ]//跳转到test标签；begin标签开始的地方
-            @ cStmt body varEnv funEnv//编译函数体语句
-              @ cExpr e3 varEnv funEnv//编译循环后的操作表达式
+            @ cStmt body varEnv funEnv structEnv//编译函数体语句
+              @ cExpr e3 varEnv funEnv structEnv//编译循环后的操作表达式
                 @ [ INCSP -1 ]//释放空间
                   @ [ Label labtest ]//test标签
-                    @ cExpr e2 varEnv funEnv//编译条件表达式e2 
+                    @ cExpr e2 varEnv funEnv structEnv//编译条件表达式e2 
                       @ [IFNZRO labbegin]//如果e2不为0，就跳转到begin标签进行循环
     | Switch (e, stmt1) -> //switch语句
         
@@ -335,17 +366,17 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
                 let labnext = newLabel () //生成next标签
 
                 [ DUP ]//复制一个栈顶
-                @ cExpr e2 varEnv funEnv//编译case常量表达式
+                @ cExpr e2 varEnv funEnv structEnv//编译case常量表达式
                   @ [ EQ ]//判断switch表达式和case常量表达式是否相等
                     @ [ IFZERO labend ]//不相等，就跳转到end标签
-                      @ cStmt stmt2 varEnv funEnv //相等，就编译case中的语句
+                      @ cStmt stmt2 varEnv funEnv structEnv //相等，就编译case中的语句
                         @ [ GOTO labnext; Label labend ]//跳转到最后的next标签；end标签
                           @ cases stmts//编译剩下的case语句
                             @ [ Label labnext ]//next标签
 
             | _ -> [] //未匹配任何case
 
-        cExpr e varEnv funEnv//编译switch表达式
+        cExpr e varEnv funEnv structEnv//编译switch表达式
         @ cases stmt1//编译case语句
           @ [ INCSP -1 ]//释放空间（因为复制一个栈顶元素）
     | Break -> 
@@ -361,13 +392,13 @@ let rec cStmt stmt (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
 
 
 //语句 或 声明
-and cStmtOrDec stmtOrDec (varEnv: VarEnv) (funEnv: FunEnv) : VarEnv * instr list =
+and cStmtOrDec stmtOrDec (varEnv: VarEnv) (funEnv: FunEnv) (structEnv : StructTypeEnv) : VarEnv * instr list =
     match stmtOrDec with
-    | Stmt stmt -> (varEnv, cStmt stmt varEnv funEnv) //语句
-    | Dec (typ, x) -> allocateWithMsg Locvar (typ, x) varEnv //调用allocateWithMsg函数为局部变量分配空间
+    | Stmt stmt -> (varEnv, cStmt stmt varEnv funEnv structEnv ) //语句
+    | Dec (typ, x) -> allocateWithMsg Locvar (typ, x) varEnv structEnv //调用allocateWithMsg函数为局部变量分配空间
     | DecAndAssign (typ, x, expr) ->
-        let (varEnv1,code) = allocateWithMsg Locvar (typ, x) varEnv //调用allocateWithMsg函数为局部变量分配空间
-        let (code2) = cExpr (Assign (AccVar x, expr)) varEnv1 funEnv //获取表达式expr给该变量x赋值的汇编指令
+        let (varEnv1,code) = allocateWithMsg Locvar (typ, x) varEnv structEnv //调用allocateWithMsg函数为局部变量分配空间
+        let (code2) = cExpr (Assign (AccVar x, expr)) varEnv1 funEnv structEnv //获取表达式expr给该变量x赋值的汇编指令
         let res = code @ code2 @ [INCSP -1] //返回varEnv1这个变量环境 和 两个汇编指令列表的拼接，最后释放空间
         (varEnv1, res)//返回环境变量和汇编指令列表
 
@@ -383,25 +414,31 @@ and cStmtOrDec stmtOrDec (varEnv: VarEnv) (funEnv: FunEnv) : VarEnv * instr list
    stack top (and thus extend the current stack frame with one element).
 *)
 //编译右值表达式
-and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =        //参数：表达式e，变量环境varEnv，函数环境funEnv，返回汇编指令列表
+and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) (structEnv : StructTypeEnv) : instr list =        //参数：表达式e，变量环境varEnv，函数环境funEnv，返回汇编指令列表
     match e with
-    | Access acc -> cAccess acc varEnv funEnv @ [ LDI ]
+    | Access acc -> cAccess acc varEnv funEnv structEnv @ [ LDI ]
     | Assign (acc, e) ->
-        cAccess acc varEnv funEnv
-        @ cExpr e varEnv funEnv @ [ STI ]
-    | CstI i -> [ CSTI i ]
-    // | CstC i -> [ CSTI i ]
+        cAccess acc varEnv funEnv structEnv 
+        @ cExpr e varEnv funEnv structEnv @ [ STI ]
+    | CstI i -> [ CSTI i ]//整型
+    | CstC c -> //字符
+        let c = (int c)
+        [ CSTI c ]
+    | CstF f -> //浮点数
+        let bytes = System.BitConverter.GetBytes(float32(f))
+        let v = System.BitConverter.ToInt32(bytes, 0)
+        [ CSTI v ]
     //测试解释器
     | Print(s,e)     ->  
-      cExpr e varEnv funEnv
+      cExpr e varEnv funEnv structEnv
       @ (match s with
          | "%d"      -> [PRINTI]
          | "%c"      -> [PRINTC]
         //  | "%f"      -> [PRINTF]
          | _        -> raise (Failure "unknown primitive 1"))
-    | Addr acc -> cAccess acc varEnv funEnv
+    | Addr acc -> cAccess acc varEnv funEnv structEnv
     | Prim1 (ope, e1) -> //一元表达式
-        cExpr e1 varEnv funEnv
+        cExpr e1 varEnv funEnv structEnv
         @ (match ope with //操作符模式匹配
            | "!" -> [ NOT ]
            | "printi" -> [ PRINTI ]
@@ -409,8 +446,8 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =        //�
         //    | "~" -> [ BITNOT ]
            | _ -> raise (Failure "unknown primitive 1"))
     | Prim2 (ope, e1, e2) -> //二元表达式
-        cExpr e1 varEnv funEnv //计算e1表达式
-        @ cExpr e2 varEnv funEnv //计算e2表达式
+        cExpr e1 varEnv funEnv structEnv //计算e1表达式
+        @ cExpr e2 varEnv funEnv structEnv//计算e2表达式
           @ (match ope with //匹配操作符
              | "*" -> [ MUL ]
              | "+" -> [ ADD ]
@@ -430,41 +467,52 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =        //�
             //  | "^" -> [ BITXOR ]
             // 需要修改Backend.fs，但个人能力，时间有限，无法完成
              | _ -> raise (Failure "unknown primitive 2"))
+
+    | Prim3 (e1, e2, e3) -> //三目运算
+        let labelse = newLabel ()
+        let labend = newLabel ()
+
+        cExpr e1 varEnv funEnv structEnv
+        @ [ IFZERO labelse ]
+          @ cExpr e2 varEnv funEnv structEnv
+            @ [ GOTO labend ]
+              @ [ Label labelse ]
+                @ cExpr e3 varEnv funEnv structEnv @ [ Label labend ]
     
     //复合运算
     | PlusAssign (acc, e) ->
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @[DUP;LDI]
-        @ cExpr e varEnv funEnv
+        @ cExpr e varEnv funEnv structEnv
         @ [ ADD;STI ]
 
     | MinusAssign (acc, e) ->
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @[DUP;LDI]
-        @ cExpr e varEnv funEnv
+        @ cExpr e varEnv funEnv structEnv
         @ [ SUB;STI ]
 
     | TimesAssign (acc, e) ->
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @[DUP;LDI]
-        @ cExpr e varEnv funEnv
+        @ cExpr e varEnv funEnv structEnv
         @ [ MUL;STI ]
 
     | DivAssign (acc, e) ->
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @[DUP;LDI]
-        @ cExpr e varEnv funEnv
+        @ cExpr e varEnv funEnv structEnv
         @ [ DIV;STI ]
 
 
     | ModAssign (acc, e) ->
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @[DUP;LDI]
-        @ cExpr e varEnv funEnv
+        @ cExpr e varEnv funEnv structEnv
         @ [MOD;STI]
     
      | PrePlus (ope, acc) -> //前置自增
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @ [ DUP; LDI; CSTI 1; ADD; STI ]
                                                         //先编译左值表达式acc，得到acc的地址
                                                         //DUP:复制栈顶的acc地址，现在栈中有两个
@@ -474,7 +522,7 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =        //�
                                                         //STI:将 上一步+1后的值 写入栈顶，即set s[s[sp-1]]
 
     | PreMinus (ope, acc) -> //前置自减
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @ [ DUP; LDI; CSTI 1; SUB; STI ]
                                                         //先编译左值表达式acc，得到acc的地址
                                                         //DUP:复制栈顶的acc地址，现在栈中有两个
@@ -484,7 +532,7 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =        //�
                                                         //STI:将 上一步-1后的值 写入栈顶，即set s[s[sp-1]]
 
     | RearPlus (acc, ope) -> //后置自增
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @ [ DUP; LDI; SWAP; DUP; LDI; CSTI 1; ADD; STI ; INCSP -1]
                                                         //先编译左值表达式acc，得到acc的地址
                                                         //DUP:复制栈顶的acc地址，现在栈中有两个
@@ -498,7 +546,7 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =        //�
                                                         //INCSP -1:释放空间
 
     | RearMinus (acc, ope) -> //后置自减
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @ [ DUP; LDI; SWAP; DUP; LDI; CSTI 1; SUB; STI ; INCSP -1]
                                                         //先编译左值表达式acc，得到acc的地址
                                                         //DUP:复制栈顶的acc地址，现在栈中有两个
@@ -516,9 +564,9 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =        //�
         let labend = newLabel ()
         let labfalse = newLabel ()
 
-        cExpr e1 varEnv funEnv
+        cExpr e1 varEnv funEnv structEnv
         @ [ IFZERO labfalse ]
-          @ cExpr e2 varEnv funEnv
+          @ cExpr e2 varEnv funEnv structEnv
             @ [ GOTO labend
                 Label labfalse
                 CSTI 0
@@ -527,19 +575,118 @@ and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =        //�
         let labend = newLabel ()
         let labtrue = newLabel ()
 
-        cExpr e1 varEnv funEnv
+        cExpr e1 varEnv funEnv structEnv
         @ [ IFNZRO labtrue ]
-          @ cExpr e2 varEnv funEnv
+          @ cExpr e2 varEnv funEnv structEnv
             @ [ GOTO labend
                 Label labtrue
                 CSTI 1
                 Label labend ]
-    | Call (f, es) -> callfun f es varEnv funEnv
+    | Call (f, es) -> callfun f es varEnv funEnv structEnv
+
+
+
+
+
+and structAllocateDef(kind : int -> Var) (structName : string) (typ : typ) (varName : string) (structTypEnv : StructTypeEnv) : StructTypeEnv = 
+    match structTypEnv with
+    | lhs :: rhs ->
+        let (name, env, depth) = lhs
+        if name = structName 
+        then 
+            match typ with
+            | TypA (TypA _, _)    -> failwith "Warning: allocate-arrays of arrays not permitted" 
+            | TypA (t, Some i)         ->
+                let newEnv = env @ [(varName, (kind (depth+i), typ))]
+                (name, newEnv, depth + i) :: rhs
+            | _ ->
+                let newEnv = env @ [(varName, (kind (depth+1), typ))] 
+                (name, newEnv, depth + 1) :: rhs
+        else structAllocateDef kind structName typ varName rhs
+    | [] -> 
+        match typ with
+            | TypA (TypA _, _)    -> failwith "Warning: allocate-arrays of arrays not permitted" 
+            | TypA (t, Some i)         ->
+                let newEnv = [(varName, (kind (i), typ))]
+                (structName, newEnv, i) :: structTypEnv
+            | _ ->
+                let newEnv = [(varName, (kind (0), typ))]
+                (structName, newEnv, 0) :: structTypEnv
+
+and makeStructEnvs(structName : string) (structEntry :(typ * string) list ) (structTypEnv : StructTypeEnv) : StructTypeEnv = 
+    let rec addm structName structEntry structTypEnv = 
+        match structEntry with
+        | [] -> structTypEnv
+        | lhs::rhs ->
+            match lhs with
+            | (typ, name)   -> 
+                let structTypEnv1 = structAllocateDef StructMemberLoc structName typ name structTypEnv
+                let structTypEnvr = addm structName rhs structTypEnv1
+                structTypEnvr
+
+    addm structName structEntry structTypEnv
+
+(* Build environments for global variables and functions *)
+// and makeGlobalEnvs (topdecs: topdec list) : VarEnv * FunEnv * StructTypeEnv * instr list =
+//     let rec addv decs varEnv funEnv =
+
+//         msg $"\nGlobal funEnv:\n{funEnv}\n"
+
+//         match decs with
+//         | [] -> (varEnv, funEnv, structTypEnv, [])
+//         | dec :: decr ->
+//             match dec with
+//             | Vardec (typ, var) ->
+//                 let (varEnv1, code1) = allocateWithMsg Glovar (typ, var) varEnv structTypEnv
+//                 let (varEnvr, funEnvr, structTypEnvr coder) = addv decr varEnv1 funEnv structTypEnv
+//                 (varEnvr, funEnvr, code1 @ coder)
+//             | VardecAndAssign (typ, var, e) ->
+//                 let (varEnv1, code1) = allocateWithMsg Glovar (typ, var) varEnv structEnv
+//                 let (varEnvr, funEnvr, coder) = addv decr varEnv1 funEnv
+//                 let code2 = cAccess (AccVar var) varEnvr funEnvr @ (structEnv (cExpr e varEnvr funEnvr [] structTypEnv (STI :: (addINCSP -1 coder))))
+//                 (varEnvr, funEnvr, code1 @ coder @ code2)
+//             |Structdec (typName, typEntry) -> 
+//                 let structTypEnv1 = makeStructEnvs typName typEntry structTypEnv
+//                 let (varEnvr, funEnvr, structTypEnvr, coder) = addv decr varEnv funEnv structTypEnv1
+//                 (varEnvr, funEnvr, structTypEnvr, coder)
+//             | Fundec (tyOpt, f, xs, body) -> addv decr varEnv ((f, ($"{newLabel ()}_{f}", tyOpt, xs)) :: funEnv)
+
+//     addv topdecs ([], 0) [] []
+and makeGlobalEnvs(topdecs : topdec list) : VarEnv * FunEnv * StructTypeEnv * instr list =
+    let rec addv decs varEnv funEnv structTypEnv =
+        match decs with
+        | [] -> (varEnv, funEnv, structTypEnv, [])
+        | dec::decr ->
+            match dec with
+            | Vardec (typ, x) -> 
+                let (varEnv1, code1) = allocate Glovar (typ, x) varEnv structTypEnv
+                let (varEnvr, funEnvr, structTypEnvr, coder) = addv decr varEnv1 funEnv structTypEnv
+                (varEnvr, funEnvr, structTypEnvr, code1 @ coder)
+                //显示没有定义，暂时先不写
+            | VariableDeclareAndAssign (typ, x, e) -> 
+                // let (varEnv1, code1) = allocate Glovar (typ, x) varEnv structTypEnv
+                // let (varEnvr, funEnvr, structTypEnvr, coder) = addv decr varEnv1 funEnv structTypEnv
+                // // let code2 = cAccess (AccVar x) varEnvr funEnvr structTypEnv 
+                // // let code3 = cExpr e varEnvr funEnvr [] structTypEnv (STI :: (addINCSP -1 coder))
+                // (varEnvr, funEnvr, structTypEnvr, code1 @ (cAccess (AccVar(x)) varEnvr funEnvr [] structTypEnv (cExpr e varEnvr funEnvr [] structTypEnv (STI :: (addINCSP -1 coder)))))
+                let (varEnv1, code1) = allocateWithMsg Glovar (typ, x) varEnv structTypEnv
+                let (varEnvr, funEnvr, structTypEnvr, coder) = addv decr varEnv1 funEnv structTypEnv
+                let code2 = cAccess (AccVar x) varEnvr funEnvr structTypEnv
+                (varEnvr, funEnvr, structTypEnvr, code1 @ coder @ code2)
+            | Fundec (tyOpt, f, xs, body) ->
+                addv decr varEnv ((f, (newLabel(), tyOpt, xs)) :: funEnv) structTypEnv
+            | Structdec (typName, typEntry) -> 
+                let structTypEnv1 = makeStructEnvs typName typEntry structTypEnv
+                let (varEnvr, funEnvr, structTypEnvr, coder) = addv decr varEnv funEnv structTypEnv1
+                (varEnvr, funEnvr, structTypEnvr, coder)
+                
+    addv topdecs ([], 0) [] []
+
 
 (* Generate code to access variable, dereference pointer or index array.
    The effect of the compiled code is to leave an lvalue on the stack.   *)
 
-and cAccess access varEnv funEnv : instr list =
+and cAccess access varEnv funEnv structEnv : instr list =
     match access with
     | AccVar x ->
         match lookup (fst varEnv) x with
@@ -552,31 +699,45 @@ and cAccess access varEnv funEnv : instr list =
             else
                 [ CSTI addr ]
         | Locvar addr, _ -> [ GETBP; OFFSET addr; ADD ]
+
+     | AccStruct (AccVar stru, AccVar memb) ->
+        let (loc, TypeStruct structname)   = lookup (fst varEnv) stru
+        let (name, argslist, size) = structLookup structEnv structname
+        match structLookupVar argslist memb 0 with
+        | StructMemberLoc varLocate ->
+            match lookup (fst varEnv) stru with
+            | Glovar addr, _ -> 
+                let a = (addr - (size+1) + varLocate)
+                [ CSTI a ]
+            | Locvar addr, _ -> 
+                // GETBP :: addCST (addr - (size+1) + varLocate) (ADD ::  C)
+                let a = addr - (size+1) + varLocate
+                [ GETBP; OFFSET a; ADD ]
     | AccDeref e ->
         match e with
-        | Access _ -> (cExpr e varEnv funEnv)
-        | Addr _ -> (cExpr e varEnv funEnv)
+        | Access _ -> (cExpr e varEnv funEnv structEnv)
+        | Addr _ -> (cExpr e varEnv funEnv structEnv)
         | _ ->
             printfn "WARN: x86 pointer arithmetic not support!"
-            (cExpr e varEnv funEnv)
+            (cExpr e varEnv funEnv structEnv)
     | AccIndex (acc, idx) ->
-        cAccess acc varEnv funEnv
+        cAccess acc varEnv funEnv structEnv
         @ [ LDI ]
-          @ x86patch (cExpr idx varEnv funEnv) @ [ ADD ]
+          @ x86patch (cExpr idx varEnv funEnv structEnv) @ [ ADD ]
 
 (* Generate code to evaluate a list es of expressions: *)
 
-and cExprs es varEnv funEnv : instr list =
-    List.concat (List.map (fun e -> cExpr e varEnv funEnv) es)
+and cExprs es varEnv funEnv structEnv: instr list =
+    List.concat (List.map (fun e -> cExpr e varEnv funEnv structEnv) es)
 
 (* Generate code to evaluate arguments es and then call function f: *)
 
-and callfun f es varEnv funEnv : instr list =
+and callfun f es varEnv funEnv structEnv: instr list =
     let (labf, tyOpt, paramdecs) = lookup funEnv f
     let argc = List.length es
 
     if argc = List.length paramdecs then
-        cExprs es varEnv funEnv @ [ CALL(argc, labf) ]
+        cExprs es varEnv funEnv structEnv @ [ CALL(argc, labf) ]
     else
         raise (Failure(f + ": parameter/argument mismatch"))
 
@@ -586,13 +747,13 @@ let argc = ref 0
 
 let cProgram (Prog topdecs) : instr list =
     let _ = resetLabels ()
-    let ((globalVarEnv, _), funEnv, globalInit) = makeGlobalEnvs topdecs
+    let ((globalVarEnv, _), funEnv,structEnv, globalInit) = makeGlobalEnvs topdecs
 
     let compilefun (tyOpt, f, xs, body) =
         let (labf, _, paras) = lookup funEnv f
         let paraNums = List.length paras
         let (envf, fdepthf) = bindParams paras (globalVarEnv, 0)
-        let code = cStmt body (envf, fdepthf) funEnv
+        let code = cStmt body (envf, fdepthf) funEnv structEnv
 
         [ FLabel(paraNums, labf) ]
         @ code @ [ RET(paraNums - 1) ]
@@ -601,7 +762,9 @@ let cProgram (Prog topdecs) : instr list =
         List.choose
             (function
             | Fundec (rTy, name, argTy, body) -> Some(compilefun (rTy, name, argTy, body))
-            | Vardec _ -> None)
+            | Vardec _ -> None
+            | VariableDeclareAndAssign _ -> None
+            | Structdec _ -> None)
             topdecs
 
     let (mainlab, _, mainparams) = lookup funEnv "main"
