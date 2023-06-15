@@ -287,8 +287,8 @@ and cStmtOrDec stmtOrDec (varEnv: VarEnv) (funEnv: FunEnv) : VarEnv * instr list
    execution of instrs will leave the rvalue of expression e on the
    stack top (and thus extend the current stack frame with one element).
 *)
-
-and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =
+//编译右值表达式
+and cExpr (e: expr) (varEnv: VarEnv) (funEnv: FunEnv) : instr list =        //参数：表达式e，变量环境varEnv，函数环境funEnv，返回汇编指令列表
     match e with
     | Access acc -> cAccess acc varEnv funEnv @ [ LDI ]
     | Assign (acc, e) ->
