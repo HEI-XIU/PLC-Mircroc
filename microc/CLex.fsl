@@ -39,9 +39,9 @@ let keyword s =
     | "default" -> DEFAULT   
     | "string"  -> STRING  
     | "float"   -> FLOAT  
-    | "bool"    -> BOOL
-    | "false"   -> CSTBOOL false 
-    | "true"    -> CSTBOOL true  
+    | "bool"    -> BOOL     //bollean
+    | "false"   -> CSTBOOL false
+    | "true"    -> CSTBOOL true
     | "printf"  -> PRINTF 
 
     | "Int"     -> TOINT
@@ -99,7 +99,7 @@ rule Token = parse          // 每个 规则rule 会生成为一个函数，函�
   | '.'             { POINT }                                                //先查是否是关键字,是则返回对应关键字的Token
   | '+'             { PLUS }  // 返回Token PLUS 给调用词法分析器的程序,通常是Parser
                               // 此时lexbuf是 匹配 '+'完成后，后续的内容 
-  | '?'             { QUE }
+  | '?'             { QUE } 
   | '-'             { MINUS } 
   | '*'             { TIMES } 
   | '/'             { DIV } 
@@ -111,6 +111,12 @@ rule Token = parse          // 每个 规则rule 会生成为一个函数，函�
   | '<'             { LT }
   | ">="            { GE }
   | "<="            { LE }
+  | "<<"            { BITLEFT }
+  | ">>"            { BITRIGHT }
+  | "^"             { BITXOR }  
+  | "|"             { BITOR }
+  | "&"             { BITAND } 
+
   | "_"             { ALL }
   | ":"             { COLON }
   | "->"            { DEAL }
